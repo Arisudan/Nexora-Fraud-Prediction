@@ -67,17 +67,11 @@ const UserSchema = new mongoose.Schema({
       registeredEmail: { type: String },
       alertMode: { type: String, enum: ['popup', 'silent', 'block'], default: 'popup' },
       activatedAt: { type: Date }
-    },
-    upiProtection: {
-      enabled: { type: Boolean, default: false },
-      registeredUPI: { type: String },
-      alertMode: { type: String, enum: ['popup', 'silent', 'block'], default: 'popup' },
-      activatedAt: { type: Date }
     }
   },
   
   pendingAlerts: [{
-    alertType: { type: String, enum: ['call', 'sms', 'email', 'upi'] },
+    alertType: { type: String, enum: ['call', 'sms', 'email'] },
     fromEntity: { type: String },
     riskLevel: { type: String },
     riskScore: { type: Number },
@@ -104,12 +98,12 @@ const UserSchema = new mongoose.Schema({
   },
   blockedEntities: [{
     entity: { type: String },
-    entityType: { type: String, enum: ['phone', 'email', 'upi', 'bank'] },
+    entityType: { type: String, enum: ['phone', 'email', 'bank'] },
     blockedAt: { type: Date, default: Date.now }
   }],
   markedSafeEntities: [{
     entity: { type: String },
-    entityType: { type: String, enum: ['phone', 'email', 'upi', 'bank'] },
+    entityType: { type: String, enum: ['phone', 'email', 'bank'] },
     markedAt: { type: Date, default: Date.now }
   }],
   
@@ -160,7 +154,6 @@ UserSchema.methods.getEnabledProtections = function() {
   if (this.protectionSettings?.callProtection?.enabled) protections.push('call');
   if (this.protectionSettings?.smsProtection?.enabled) protections.push('sms');
   if (this.protectionSettings?.emailProtection?.enabled) protections.push('email');
-  if (this.protectionSettings?.upiProtection?.enabled) protections.push('upi');
   return protections;
 };
 
@@ -177,8 +170,6 @@ UserSchema.statics.findByProtectedEntity = function(entity, entityType) {
       return this.find({ 'protectionSettings.smsProtection.enabled': true, 'protectionSettings.smsProtection.registeredPhone': normalized });
     case 'email':
       return this.find({ 'protectionSettings.emailProtection.enabled': true, 'protectionSettings.emailProtection.registeredEmail': entity.toLowerCase().trim() });
-    case 'upi':
-      return this.find({ 'protectionSettings.upiProtection.enabled': true, 'protectionSettings.upiProtection.registeredUPI': entity.toLowerCase().trim() });
     default:
       return Promise.resolve([]);
   }

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  FiAlertTriangle, FiPhone, FiMessageSquare, FiMail, FiCreditCard,
+  FiAlertTriangle, FiPhone, FiMessageSquare, FiMail,
   FiX, FiShield, FiAlertCircle, FiCheckCircle, FiXCircle
 } from 'react-icons/fi';
 import { alertsAPI } from '../lib/api';
@@ -29,7 +29,6 @@ const AlertPopup = ({ alerts, onDismiss, onAction }) => {
       case 'call': return FiPhone;
       case 'sms': return FiMessageSquare;
       case 'email': return FiMail;
-      case 'upi': return FiCreditCard;
       default: return FiAlertTriangle;
     }
   };
@@ -124,7 +123,6 @@ const AlertPopup = ({ alerts, onDismiss, onAction }) => {
                     {currentAlert.alertType === 'call' && '⚠️ Incoming Call Alert'}
                     {currentAlert.alertType === 'sms' && '⚠️ SMS Alert'}
                     {currentAlert.alertType === 'email' && '⚠️ Email Alert'}
-                    {currentAlert.alertType === 'upi' && '⚠️ UPI Payment Alert'}
                   </h3>
                   <p className="text-white/80 text-sm">
                     {currentAlert.riskLevel.toUpperCase()} RISK DETECTED

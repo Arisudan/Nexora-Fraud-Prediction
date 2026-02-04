@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { 
   FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiLoader, FiUserPlus,
-  FiPhone, FiMessageSquare, FiShield, FiCreditCard, FiCheck, FiArrowRight
+  FiPhone, FiMessageSquare, FiShield, FiCheck, FiArrowRight
 } from 'react-icons/fi';
 
 export default function Register() {
@@ -30,8 +30,7 @@ export default function Register() {
   const [protectionSettings, setProtectionSettings] = useState({
     callProtection: { enabled: false, phone: '' },
     smsProtection: { enabled: false, phone: '' },
-    emailProtection: { enabled: false, email: '' },
-    upiProtection: { enabled: false, upiId: '' }
+    emailProtection: { enabled: false, email: '' }
   });
   
   const [errors, setErrors] = useState({});
@@ -139,11 +138,6 @@ export default function Register() {
           enabled: protectionSettings.emailProtection.enabled,
           registeredEmail: protectionSettings.emailProtection.email,
           alertMode: 'popup'
-        },
-        upiProtection: {
-          enabled: protectionSettings.upiProtection.enabled,
-          registeredUPI: protectionSettings.upiProtection.upiId,
-          alertMode: 'popup'
         }
       };
 
@@ -207,18 +201,6 @@ export default function Register() {
       textIcon: 'text-purple-600',
       field: 'email',
       placeholder: 'Email address to protect'
-    },
-    {
-      id: 'upiProtection',
-      icon: FiCreditCard,
-      title: 'UPI Protection',
-      description: 'Alert before fraudulent UPI payment requests',
-      color: 'orange',
-      bgEnabled: 'bg-orange-50 border-orange-500',
-      bgIcon: 'bg-orange-100',
-      textIcon: 'text-orange-600',
-      field: 'upiId',
-      placeholder: 'Your UPI ID (e.g., name@upi)'
     }
   ];
 
@@ -417,14 +399,14 @@ export default function Register() {
                           <button
                             type="button"
                             onClick={() => handleProtectionToggle(option.id)}
-                            className={`w-14 h-7 rounded-full relative transition-all flex-shrink-0 ${
+                            className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${
                               isEnabled 
                                 ? 'bg-green-500 shadow-lg shadow-green-500/30' 
                                 : 'bg-gray-300'
                             }`}
                           >
-                            <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform ${
-                              isEnabled ? 'translate-x-8' : 'translate-x-1'
+                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${
+                              isEnabled ? 'translate-x-6' : 'translate-x-0'
                             }`} />
                           </button>
                           

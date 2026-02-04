@@ -187,12 +187,6 @@ router.post('/auth/register', [
         registeredEmail: (protectionSettings?.emailProtection?.email || email || '').toLowerCase().trim(),
         alertMode: 'popup',
         activatedAt: protectionSettings?.emailProtection?.enabled ? new Date() : null
-      },
-      upiProtection: {
-        enabled: protectionSettings?.upiProtection?.enabled || false,
-        registeredUPI: (protectionSettings?.upiProtection?.upiId || '').toLowerCase().trim(),
-        alertMode: 'popup',
-        activatedAt: protectionSettings?.upiProtection?.enabled ? new Date() : null
       }
     };
     
@@ -225,7 +219,6 @@ router.post('/auth/register', [
     if (userProtectionSettings.callProtection.enabled) enabledProtections.push('Call Protection');
     if (userProtectionSettings.smsProtection.enabled) enabledProtections.push('SMS Protection');
     if (userProtectionSettings.emailProtection.enabled) enabledProtections.push('Email Protection');
-    if (userProtectionSettings.upiProtection.enabled) enabledProtections.push('UPI Protection');
     
     emailService.sendWelcome(user.email, user.name, enabledProtections)
       .then(() => console.log(`📧 Welcome email sent to ${user.email}`))
@@ -936,11 +929,10 @@ router.get('/check-risk/:entity', optionalAuth, async (req, res) => {
 router.post('/settings/protection', authenticateToken, [
   body('callProtection').optional().isObject(),
   body('smsProtection').optional().isObject(),
-  body('emailProtection').optional().isObject(),
-  body('upiProtection').optional().isObject()
+  body('emailProtection').optional().isObject()
 ], validate, async (req, res) => {
   try {
-    const { callProtection, smsProtection, emailProtection, upiProtection } = req.body;
+    const { callProtection, smsProtection, emailProtection } = req.body;
     
     // Initialize protection settings if not exists
     if (!req.user.protectionSettings) {
@@ -977,17 +969,6 @@ router.post('/settings/protection', authenticateToken, [
         registeredEmail: emailProtection.registeredEmail?.toLowerCase().trim() || '',
         alertMode: emailProtection.alertMode || 'popup',
         activatedAt: emailProtection.enabled ? new Date() : null
-      };
-    }
-    
-    // Update UPI protection
-    if (upiProtection !== undefined) {
-      req.user.protectionSettings.upiProtection = {
-        ...req.user.protectionSettings.upiProtection,
-        enabled: upiProtection.enabled || false,
-        registeredUPI: upiProtection.registeredUPI?.toLowerCase().trim() || '',
-        alertMode: upiProtection.alertMode || 'popup',
-        activatedAt: upiProtection.enabled ? new Date() : null
       };
     }
     

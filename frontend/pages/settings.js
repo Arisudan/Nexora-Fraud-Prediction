@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { protectionAPI, alertsAPI } from '../lib/api';
 import toast from 'react-hot-toast';
 import { 
-  FiSettings, FiShield, FiPhone, FiMessageSquare, FiMail, FiCreditCard,
+  FiSettings, FiShield, FiPhone, FiMessageSquare, FiMail,
   FiSave, FiLoader, FiCheck, FiAlertTriangle, FiBell, FiVolume2, FiVolumeX,
   FiActivity, FiClock, FiTrash2
 } from 'react-icons/fi';
@@ -23,8 +23,7 @@ export default function Settings() {
   const [settings, setSettings] = useState({
     callProtection: { enabled: false, registeredPhone: '', alertMode: 'popup' },
     smsProtection: { enabled: false, registeredPhone: '', alertMode: 'popup' },
-    emailProtection: { enabled: false, registeredEmail: '', alertMode: 'popup' },
-    upiProtection: { enabled: false, registeredUPI: '', alertMode: 'popup' }
+    emailProtection: { enabled: false, registeredEmail: '', alertMode: 'popup' }
   });
   
   const [alertHistory, setAlertHistory] = useState([]);
@@ -146,19 +145,6 @@ export default function Settings() {
       field: 'registeredEmail',
       placeholder: 'Email address to protect',
       inputType: 'email'
-    },
-    {
-      id: 'upiProtection',
-      icon: FiCreditCard,
-      title: 'UPI Protection',
-      description: 'Alerts for fraudulent UPI payment requests',
-      color: 'orange',
-      bgEnabled: 'bg-orange-50 border-orange-500',
-      bgIcon: 'bg-orange-100',
-      textIcon: 'text-orange-600',
-      field: 'registeredUPI',
-      placeholder: 'Your UPI ID (e.g., name@upi)',
-      inputType: 'text'
     }
   ];
 
@@ -275,14 +261,14 @@ export default function Settings() {
                         <button
                           type="button"
                           onClick={() => handleToggle(option.id)}
-                          className={`w-14 h-7 rounded-full relative transition-all flex-shrink-0 ${
+                          className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${
                             isEnabled 
                               ? 'bg-green-500 shadow-lg shadow-green-500/30' 
                               : 'bg-gray-300'
                           }`}
                         >
-                          <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform ${
-                            isEnabled ? 'translate-x-8' : 'translate-x-1'
+                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${
+                            isEnabled ? 'translate-x-6' : 'translate-x-0'
                           }`} />
                         </button>
                         
@@ -313,7 +299,7 @@ export default function Settings() {
                               {/* Registered Entity */}
                               <div>
                                 <label className="text-sm font-medium text-gray-700 block mb-1">
-                                  Protected {option.field === 'registeredEmail' ? 'Email' : option.field === 'registeredUPI' ? 'UPI ID' : 'Phone'}
+                                  Protected {option.field === 'registeredEmail' ? 'Email' : 'Phone'}
                                 </label>
                                 <input
                                   type={option.inputType}
