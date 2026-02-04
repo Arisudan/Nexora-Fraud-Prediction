@@ -1,13 +1,17 @@
 // FILE: pages/dashboard.js
-// Main Dashboard - Fraud Reporting and Risk Checking Interface
+// Main Dashboard - Fraud Reporting, Risk Checking & Protection Interface
+// ⚡ Real-time enabled with WebSocket
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import FraudReportForm from '../components/FraudReportForm';
 import RiskChecker from '../components/RiskChecker';
-import { actionsAPI, fraudAPI, statsAPI } from '../lib/api';
+import AlertPopup from '../components/AlertPopup';
+import { actionsAPI, fraudAPI, statsAPI, alertsAPI, protectionAPI } from '../lib/api';
 import toast from 'react-hot-toast';
 import { 
   FiSearch, 
@@ -16,17 +20,50 @@ import {
   FiShield,
   FiUsers,
   FiTrendingUp,
-  FiClock
+  FiClock,
+  FiPhone,
+  FiMessageSquare,
+  FiMail,
+  FiCreditCard,
+  FiSettings,
+  FiBell,
+  FiCheck,
+  FiX,
+  FiWifi,
+  FiWifiOff
 } from 'react-icons/fi';
 
 export default function Dashboard() {
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { isConnected, pendingAlerts: socketAlerts, connect, acknowledgeAlert } = useSocket();
   const [activeTab, setActiveTab] = useState('check'); // 'check' | 'report' | 'history'
   const [stats, setStats] = useState(null);
   const [myReports, setMyReports] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [protectionSettings, setProtectionSettings] = useState(null);
+  const [showAlertPopup, setShowAlertPopup] = useState(false);
+
+  // Use socket alerts for real-time, fall back to polling
+  const pendingAlerts = socketAlerts;
+
+  // Connect to WebSocket when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        connect(token);
+      }
+    }
+  }, [isAuthenticated, connect]);
+
+  // Show alert popup when new alerts arrive
+  useEffect(() => {
+    if (pendingAlerts.length > 0) {
+      setShowAlertPopup(true);
+    }
+  }, [pendingAlerts]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -54,6 +91,45 @@ export default function Dashboard() {
       fetchStats();
     }
   }, [isAuthenticated]);
+
+  // Fetch protection settings
+  useEffect(() => {
+    const fetchProtectionSettings = async () => {
+      try {
+        const response = await protectionAPI.getSettings();
+        if (response.success) {
+          setProtectionSettings(response.data.protectionSettings);
+        }
+      } catch (error) {
+        console.error('Failed to fetch protection settings:', error);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchProtectionSettings();
+    }
+  }, [isAuthenticated]);
+
+  // Handle alert actions (uses WebSocket)
+  const handleAlertAction = async (alertId, action) => {
+    try {
+      await alertsAPI.acknowledge(alertId, action);
+      acknowledgeAlert(alertId, action);
+      
+      if (pendingAlerts.length <= 1) {
+        setShowAlertPopup(false);
+      }
+    } catch (error) {
+      toast.error('Failed to process action');
+    }
+  };
+
+  const handleAlertDismiss = (alertId) => {
+    acknowledgeAlert(alertId, 'dismissed');
+    if (pendingAlerts.length <= 1) {
+      setShowAlertPopup(false);
+    }
+  };
 
   // Fetch user's reports when history tab is active
   useEffect(() => {
@@ -125,6 +201,15 @@ export default function Dashboard() {
 
   return (
     <Layout title="Dashboard">
+      {/* Alert Popup for Real-time Protection */}
+      {showAlertPopup && (
+        <AlertPopup 
+          alerts={pendingAlerts}
+          onDismiss={handleAlertDismiss}
+          onAction={handleAlertAction}
+        />
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Header */}
         <div className="mb-8">
@@ -135,6 +220,120 @@ export default function Dashboard() {
             Check suspicious contacts or report fraud to protect the community.
           </p>
         </div>
+
+        {/* Protection Status Card */}
+        {protectionSettings && (
+          <div className="mb-8 bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute top-0 right-0 w-64 h-64 transform translate-x-32 -translate-y-32">
+              <div className="w-full h-full rounded-full bg-white/10"></div>
+            </div>
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <FiShield className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Protection Status</h2>
+                    <p className="text-white/80 text-sm flex items-center gap-2">
+                      {isConnected ? (
+                        <>
+                          <FiWifi className="w-4 h-4 text-green-300" />
+                          <span className="text-green-300">Real-time active</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiWifiOff className="w-4 h-4 text-yellow-300" />
+                          <span className="text-yellow-300">Connecting...</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Link href="/settings">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium">
+                    <FiSettings className="w-4 h-4" />
+                    Manage
+                  </button>
+                </Link>
+              </div>
+
+              {/* Protection Items */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl ${
+                  protectionSettings.callProtection?.enabled 
+                    ? 'bg-green-500/30 border border-green-400/50' 
+                    : 'bg-white/10'
+                }`}>
+                  <FiPhone className="w-5 h-5" />
+                  <div>
+                    <p className="text-sm font-medium">Call</p>
+                    <p className="text-xs text-white/70">
+                      {protectionSettings.callProtection?.enabled ? '✓ Active' : 'Inactive'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl ${
+                  protectionSettings.smsProtection?.enabled 
+                    ? 'bg-green-500/30 border border-green-400/50' 
+                    : 'bg-white/10'
+                }`}>
+                  <FiMessageSquare className="w-5 h-5" />
+                  <div>
+                    <p className="text-sm font-medium">SMS</p>
+                    <p className="text-xs text-white/70">
+                      {protectionSettings.smsProtection?.enabled ? '✓ Active' : 'Inactive'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl ${
+                  protectionSettings.emailProtection?.enabled 
+                    ? 'bg-green-500/30 border border-green-400/50' 
+                    : 'bg-white/10'
+                }`}>
+                  <FiMail className="w-5 h-5" />
+                  <div>
+                    <p className="text-sm font-medium">Email</p>
+                    <p className="text-xs text-white/70">
+                      {protectionSettings.emailProtection?.enabled ? '✓ Active' : 'Inactive'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl ${
+                  protectionSettings.upiProtection?.enabled 
+                    ? 'bg-green-500/30 border border-green-400/50' 
+                    : 'bg-white/10'
+                }`}>
+                  <FiCreditCard className="w-5 h-5" />
+                  <div>
+                    <p className="text-sm font-medium">UPI</p>
+                    <p className="text-xs text-white/70">
+                      {protectionSettings.upiProtection?.enabled ? '✓ Active' : 'Inactive'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* No Protection Warning */}
+              {!protectionSettings.callProtection?.enabled && 
+               !protectionSettings.smsProtection?.enabled &&
+               !protectionSettings.emailProtection?.enabled &&
+               !protectionSettings.upiProtection?.enabled && (
+                <div className="mt-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg p-3 flex items-center gap-3">
+                  <FiAlertTriangle className="w-5 h-5 text-yellow-300" />
+                  <p className="text-sm text-yellow-100">
+                    No protection enabled. <Link href="/settings" className="underline font-medium">Enable now</Link> to get real-time alerts.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

@@ -1,16 +1,24 @@
 // FILE: server.js
-// Main Entry Point - Express Server with MongoDB Connection
+// Main Entry Point - Express Server with MongoDB, WebSocket & Real-time Services
 
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http');
+
+// Import services
+const emailService = require('./services/emailService');
+const websocketService = require('./services/websocketService');
 
 // Import routes
 const apiRoutes = require('./routes/api');
 
 // Initialize Express app
 const app = express();
+
+// Create HTTP server for WebSocket support
+const server = http.createServer(app);
 
 // ==========================================
 // MIDDLEWARE CONFIGURATION
@@ -95,12 +103,21 @@ app.get('/health', (req, res) => {
     message: 'Nexora Fraud Predictor API is running!',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    websocket: {
+      status: 'active',
+      connectedUsers: websocketService.getConnectedUsersCount()
+    }
   });
 });
 
-// API routes
-app.use('/api', apiRoutes);
+// API routes - Pass websocket service
+app.use('/api', (req, res, next) => {
+  req.io = websocketService.getIO();
+  req.websocket = websocketService;
+  req.emailService = emailService;
+  next();
+}, apiRoutes);
 
 // ==========================================
 // ERROR HANDLING
@@ -161,19 +178,31 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// START SERVER
+// START SERVER WITH REAL-TIME SERVICES
 // ==========================================
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+// Initialize WebSocket
+websocketService.initialize(server);
+
+// Initialize Email Service
+emailService.initialize().then(ready => {
+  if (ready) {
+    console.log('📧 Email service initialized');
+  }
+});
+
+server.listen(PORT, () => {
   console.log('==========================================');
   console.log('🛡️  NEXORA FRAUD PREDICTOR API');
   console.log('   Crowd Intelligence Powered');
+  console.log('   ⚡ REAL-TIME ENABLED');
   console.log('==========================================');
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
   console.log(`💚 Health Check: http://localhost:${PORT}/health`);
   console.log('==========================================');
 });

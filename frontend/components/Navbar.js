@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FiShield, FiMenu, FiX, FiUser, FiLogOut, FiHome, FiSearch, FiFileText } from 'react-icons/fi';
+import { FiShield, FiMenu, FiX, FiUser, FiLogOut, FiHome, FiSearch, FiFileText, FiSettings } from 'react-icons/fi';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -20,6 +20,7 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', label: 'Home', icon: FiHome },
     { href: '/dashboard', label: 'Dashboard', icon: FiSearch, protected: true },
+    { href: '/settings', label: 'Settings', icon: FiSettings, protected: true },
   ];
 
   const isActive = (path) => router.pathname === path;

@@ -1,5 +1,6 @@
 // FILE: routes/api.js
 // API Routes for Authentication, Fraud Reporting, and Risk Checking
+// ⚡ Real-time enabled with WebSocket and Email OTP
 
 const express = require('express');
 const router = express.Router();
@@ -14,6 +15,11 @@ const {
   requireKYC,
   generateToken 
 } = require('../middleware/auth');
+
+// Import real-time services
+const otpService = require('../services/otpService');
+const emailService = require('../services/emailService');
+const websocketService = require('../services/websocketService');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -147,10 +153,11 @@ router.post('/auth/register', [
     .withMessage('Please provide a valid email'),
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters')
+    .withMessage('Password must be at least 6 characters'),
+  body('protectionSettings').optional().isObject()
 ], validate, async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, protectionSettings } = req.body;
     
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
@@ -161,11 +168,41 @@ router.post('/auth/register', [
       });
     }
     
+    // Build protection settings from registration
+    const userProtectionSettings = {
+      callProtection: {
+        enabled: protectionSettings?.callProtection?.enabled || false,
+        registeredPhone: (protectionSettings?.callProtection?.phone || phone || '').replace(/[\s\-\(\)\+\.]/g, ''),
+        alertMode: 'popup',
+        activatedAt: protectionSettings?.callProtection?.enabled ? new Date() : null
+      },
+      smsProtection: {
+        enabled: protectionSettings?.smsProtection?.enabled || false,
+        registeredPhone: (protectionSettings?.smsProtection?.phone || phone || '').replace(/[\s\-\(\)\+\.]/g, ''),
+        alertMode: 'popup',
+        activatedAt: protectionSettings?.smsProtection?.enabled ? new Date() : null
+      },
+      emailProtection: {
+        enabled: protectionSettings?.emailProtection?.enabled || false,
+        registeredEmail: (protectionSettings?.emailProtection?.email || email || '').toLowerCase().trim(),
+        alertMode: 'popup',
+        activatedAt: protectionSettings?.emailProtection?.enabled ? new Date() : null
+      },
+      upiProtection: {
+        enabled: protectionSettings?.upiProtection?.enabled || false,
+        registeredUPI: (protectionSettings?.upiProtection?.upiId || '').toLowerCase().trim(),
+        alertMode: 'popup',
+        activatedAt: protectionSettings?.upiProtection?.enabled ? new Date() : null
+      }
+    };
+    
     // Create new user
     const user = new User({
       name,
       email,
-      password
+      password,
+      phone: phone?.replace(/[\s\-\(\)\+\.]/g, ''),
+      protectionSettings: userProtectionSettings
     });
     
     await user.save();
@@ -182,6 +219,17 @@ router.post('/auth/register', [
       ipAddress: req.ip,
       userAgent: req.headers['user-agent']
     });
+
+    // ⚡ REAL-TIME: Send welcome email with protection status
+    const enabledProtections = [];
+    if (userProtectionSettings.callProtection.enabled) enabledProtections.push('Call Protection');
+    if (userProtectionSettings.smsProtection.enabled) enabledProtections.push('SMS Protection');
+    if (userProtectionSettings.emailProtection.enabled) enabledProtections.push('Email Protection');
+    if (userProtectionSettings.upiProtection.enabled) enabledProtections.push('UPI Protection');
+    
+    emailService.sendWelcome(user.email, user.name, enabledProtections)
+      .then(() => console.log(`📧 Welcome email sent to ${user.email}`))
+      .catch(err => console.error(`Failed to send welcome email: ${err.message}`));
     
     res.status(201).json({
       success: true,
@@ -529,7 +577,7 @@ router.post('/kyc/submit', authenticateToken, [
   }
 });
 
-// POST /api/kyc/verify-otp - Verify OTP (Mocked for now)
+// POST /api/kyc/verify-otp - Verify OTP (REAL Implementation)
 router.post('/kyc/verify-otp', authenticateToken, [
   body('otp')
     .isLength({ min: 4, max: 6 })
@@ -538,14 +586,15 @@ router.post('/kyc/verify-otp', authenticateToken, [
   try {
     const { otp } = req.body;
     
-    // MOCK OTP VERIFICATION - Always returns true for development
-    // In production, integrate with SMS gateway like Twilio, MSG91, etc.
-    const isValidOTP = true; // Mock: Always valid
+    // Verify OTP using real OTP service
+    const verifyResult = otpService.verify(req.user.email, otp, 'kyc');
     
-    if (!isValidOTP) {
+    if (!verifyResult.success) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP. Please try again.'
+        message: verifyResult.message,
+        error: verifyResult.error,
+        remainingAttempts: verifyResult.remainingAttempts
       });
     }
     
@@ -565,6 +614,13 @@ router.post('/kyc/verify-otp', authenticateToken, [
       ipAddress: req.ip,
       userAgent: req.headers['user-agent']
     });
+
+    // Send real-time notification
+    websocketService.sendNotification(req.user._id.toString(), {
+      type: 'verification_success',
+      title: 'Verification Complete',
+      message: 'Your account has been verified successfully!'
+    });
     
     res.json({
       success: true,
@@ -582,18 +638,58 @@ router.post('/kyc/verify-otp', authenticateToken, [
   }
 });
 
-// POST /api/kyc/send-otp - Send OTP (Mocked)
+// POST /api/kyc/send-otp - Send OTP (REAL Implementation with Email)
 router.post('/kyc/send-otp', authenticateToken, async (req, res) => {
   try {
-    // MOCK: In production, send actual OTP via SMS gateway
-    // For now, just return success
+    // Generate real OTP
+    const otpResult = otpService.generate(req.user.email, 'kyc');
+    
+    if (!otpResult.success) {
+      return res.status(429).json({
+        success: false,
+        message: otpResult.message,
+        waitSeconds: otpResult.waitSeconds
+      });
+    }
+    
+    // Send OTP via email (real-time)
+    const emailResult = await emailService.sendOTP(
+      req.user.email, 
+      otpResult.otp, 
+      req.user.name
+    );
+    
+    if (!emailResult.success) {
+      // Invalidate OTP if email failed
+      otpService.invalidate(req.user.email, 'kyc');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email. Please try again.'
+      });
+    }
+    
+    // Log activity
+    await ActivityLog.logActivity({
+      userId: req.user._id,
+      actionType: 'otp_sent',
+      details: { email: req.user.email },
+      result: 'success',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
+    // Send real-time notification
+    websocketService.sendOTPNotification(req.user._id.toString(), {
+      message: 'OTP sent to your email',
+      expiresInMinutes: otpResult.expiresInMinutes
+    });
     
     res.json({
       success: true,
-      message: 'OTP sent successfully to your phone number.',
+      message: `OTP sent successfully to ${req.user.email}`,
       data: {
-        // In development, we can show the mock OTP
-        mockOTP: '123456' // Remove in production
+        expiresInMinutes: otpResult.expiresInMinutes,
+        email: req.user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') // Mask email
       }
     });
   } catch (error) {
@@ -828,6 +924,321 @@ router.get('/check-risk/:entity', optionalAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error checking fraud risk.'
+    });
+  }
+});
+
+// ==========================================
+// PROTECTION SETTINGS ROUTES
+// ==========================================
+
+// POST /api/settings/protection - Update protection settings
+router.post('/settings/protection', authenticateToken, [
+  body('callProtection').optional().isObject(),
+  body('smsProtection').optional().isObject(),
+  body('emailProtection').optional().isObject(),
+  body('upiProtection').optional().isObject()
+], validate, async (req, res) => {
+  try {
+    const { callProtection, smsProtection, emailProtection, upiProtection } = req.body;
+    
+    // Initialize protection settings if not exists
+    if (!req.user.protectionSettings) {
+      req.user.protectionSettings = {};
+    }
+    
+    // Update call protection
+    if (callProtection !== undefined) {
+      req.user.protectionSettings.callProtection = {
+        ...req.user.protectionSettings.callProtection,
+        enabled: callProtection.enabled || false,
+        registeredPhone: callProtection.registeredPhone?.replace(/[\s\-\(\)\+\.]/g, '') || '',
+        alertMode: callProtection.alertMode || 'popup',
+        activatedAt: callProtection.enabled ? new Date() : null
+      };
+    }
+    
+    // Update SMS protection
+    if (smsProtection !== undefined) {
+      req.user.protectionSettings.smsProtection = {
+        ...req.user.protectionSettings.smsProtection,
+        enabled: smsProtection.enabled || false,
+        registeredPhone: smsProtection.registeredPhone?.replace(/[\s\-\(\)\+\.]/g, '') || '',
+        alertMode: smsProtection.alertMode || 'popup',
+        activatedAt: smsProtection.enabled ? new Date() : null
+      };
+    }
+    
+    // Update email protection
+    if (emailProtection !== undefined) {
+      req.user.protectionSettings.emailProtection = {
+        ...req.user.protectionSettings.emailProtection,
+        enabled: emailProtection.enabled || false,
+        registeredEmail: emailProtection.registeredEmail?.toLowerCase().trim() || '',
+        alertMode: emailProtection.alertMode || 'popup',
+        activatedAt: emailProtection.enabled ? new Date() : null
+      };
+    }
+    
+    // Update UPI protection
+    if (upiProtection !== undefined) {
+      req.user.protectionSettings.upiProtection = {
+        ...req.user.protectionSettings.upiProtection,
+        enabled: upiProtection.enabled || false,
+        registeredUPI: upiProtection.registeredUPI?.toLowerCase().trim() || '',
+        alertMode: upiProtection.alertMode || 'popup',
+        activatedAt: upiProtection.enabled ? new Date() : null
+      };
+    }
+    
+    await req.user.save();
+    
+    // Log activity
+    await ActivityLog.logActivity({
+      userId: req.user._id,
+      actionType: 'update_protection',
+      details: { settings: req.user.protectionSettings },
+      result: 'success',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
+    res.json({
+      success: true,
+      message: 'Protection settings updated successfully.',
+      data: {
+        protectionSettings: req.user.protectionSettings,
+        enabledProtections: req.user.getEnabledProtections()
+      }
+    });
+  } catch (error) {
+    console.error('Update protection settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating protection settings.'
+    });
+  }
+});
+
+// GET /api/settings/protection - Get current protection settings
+router.get('/settings/protection', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        protectionSettings: req.user.protectionSettings || {},
+        enabledProtections: req.user.getEnabledProtections ? req.user.getEnabledProtections() : []
+      }
+    });
+  } catch (error) {
+    console.error('Get protection settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching protection settings.'
+    });
+  }
+});
+
+// ==========================================
+// REAL-TIME ALERTS ROUTES
+// ==========================================
+
+// GET /api/alerts/pending - Get pending alerts for user
+router.get('/alerts/pending', authenticateToken, async (req, res) => {
+  try {
+    const pendingAlerts = req.user.pendingAlerts?.filter(a => !a.acknowledged) || [];
+    
+    res.json({
+      success: true,
+      data: {
+        alerts: pendingAlerts,
+        count: pendingAlerts.length
+      }
+    });
+  } catch (error) {
+    console.error('Get pending alerts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching alerts.'
+    });
+  }
+});
+
+// POST /api/alerts/acknowledge/:alertId - Acknowledge an alert
+router.post('/alerts/acknowledge/:alertId', authenticateToken, [
+  body('action')
+    .optional()
+    .isIn(['blocked', 'allowed', 'reported', 'dismissed'])
+    .withMessage('Action must be one of: blocked, allowed, reported, dismissed')
+], validate, async (req, res) => {
+  try {
+    const { alertId } = req.params;
+    const { action } = req.body;
+    
+    const alert = req.user.pendingAlerts?.id(alertId);
+    
+    if (!alert) {
+      return res.status(404).json({
+        success: false,
+        message: 'Alert not found.'
+      });
+    }
+    
+    alert.acknowledged = true;
+    alert.acknowledgedAt = new Date();
+    
+    // Add to history
+    req.user.alertHistory.push({
+      alertType: alert.alertType,
+      fromEntity: alert.fromEntity,
+      riskLevel: alert.riskLevel,
+      riskScore: alert.riskScore,
+      action: action || 'dismissed',
+      timestamp: new Date()
+    });
+    
+    // Keep only last 500 history items
+    if (req.user.alertHistory.length > 500) {
+      req.user.alertHistory = req.user.alertHistory.slice(-500);
+    }
+    
+    await req.user.save();
+    
+    res.json({
+      success: true,
+      message: 'Alert acknowledged.',
+      data: { alertId, action }
+    });
+  } catch (error) {
+    console.error('Acknowledge alert error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error acknowledging alert.'
+    });
+  }
+});
+
+// POST /api/alerts/trigger - Trigger an alert (simulates incoming call/sms/email)
+router.post('/alerts/trigger', [
+  body('recipientPhone').optional().trim(),
+  body('recipientEmail').optional().trim(),
+  body('fromEntity').trim().notEmpty().withMessage('From entity is required'),
+  body('alertType')
+    .isIn(['call', 'sms', 'email', 'upi'])
+    .withMessage('Alert type must be one of: call, sms, email, upi')
+], validate, async (req, res) => {
+  try {
+    const { recipientPhone, recipientEmail, fromEntity, alertType, message } = req.body;
+    
+    // Find users with this protection enabled
+    let users = [];
+    
+    if (alertType === 'call' && recipientPhone) {
+      users = await User.findByProtectedEntity(recipientPhone, 'call');
+    } else if (alertType === 'sms' && recipientPhone) {
+      users = await User.findByProtectedEntity(recipientPhone, 'sms');
+    } else if (alertType === 'email' && recipientEmail) {
+      users = await User.findByProtectedEntity(recipientEmail, 'email');
+    } else if (alertType === 'upi') {
+      // For UPI, we need to check against user's registered UPI
+      const recipientUPI = req.body.recipientUPI;
+      if (recipientUPI) {
+        users = await User.findByProtectedEntity(recipientUPI, 'upi');
+      }
+    }
+    
+    if (users.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No protected users found for this entity.',
+        alertsCreated: 0
+      });
+    }
+    
+    // Check risk of the incoming entity
+    const riskResult = await calculateFraudRisk(fromEntity);
+    
+    let alertsCreated = 0;
+    
+    for (const user of users) {
+      // Only create alert if risk is suspicious or higher
+      if (riskResult.riskLevel !== 'safe') {
+        const alertData = {
+          alertType,
+          fromEntity: fromEntity.toLowerCase().trim(),
+          riskLevel: riskResult.riskLevel,
+          riskScore: riskResult.score,
+          message: message || `⚠️ ${riskResult.riskLevel.toUpperCase()} incoming ${alertType}`,
+          category: riskResult.reportDetails[0]?.category || 'Unknown',
+          createdAt: new Date(),
+          acknowledged: false
+        };
+        
+        user.pendingAlerts.push(alertData);
+        
+        // Keep only last 100 pending alerts
+        if (user.pendingAlerts.length > 100) {
+          user.pendingAlerts = user.pendingAlerts.slice(-100);
+        }
+        
+        await user.save();
+        
+        // Get the saved alert with _id
+        const savedAlert = user.pendingAlerts[user.pendingAlerts.length - 1];
+        
+        // ⚡ REAL-TIME: Send instant WebSocket alert
+        websocketService.sendAlert(user._id.toString(), savedAlert);
+        
+        // ⚡ REAL-TIME: Send email notification for high/critical risk
+        if (riskResult.riskLevel === 'critical' || riskResult.riskLevel === 'high') {
+          await emailService.sendAlert(user.email, savedAlert);
+        }
+        
+        alertsCreated++;
+        
+        console.log(`\n🚨 REAL-TIME ALERT TRIGGERED for user ${user.email}`);
+        console.log(`   Type: ${alertType}`);
+        console.log(`   From: ${fromEntity}`);
+        console.log(`   Risk: ${riskResult.riskLevel} (Score: ${riskResult.score})`);
+        console.log(`   WebSocket: ${websocketService.isUserConnected(user._id.toString()) ? 'DELIVERED' : 'USER OFFLINE'}`);
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Alert processed. ${alertsCreated} user(s) notified in real-time.`,
+      data: {
+        alertsCreated,
+        riskResult
+      }
+    });
+  } catch (error) {
+    console.error('Trigger alert error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error triggering alert.'
+    });
+  }
+});
+
+// GET /api/alerts/history - Get alert history
+router.get('/alerts/history', authenticateToken, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const history = (req.user.alertHistory || []).slice(-limit).reverse();
+    
+    res.json({
+      success: true,
+      data: {
+        history,
+        count: history.length
+      }
+    });
+  } catch (error) {
+    console.error('Get alert history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching alert history.'
     });
   }
 });

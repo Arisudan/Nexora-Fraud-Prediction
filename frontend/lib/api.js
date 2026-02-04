@@ -78,9 +78,9 @@ api.interceptors.response.use(
 // ==========================================
 
 export const authAPI = {
-  // Register new user
-  register: async (name, email, password) => {
-    const response = await api.post('/auth/register', { name, email, password });
+  // Register new user with protection settings
+  register: async (registrationData) => {
+    const response = await api.post('/auth/register', registrationData);
     return response.data;
   },
   
@@ -93,6 +93,54 @@ export const authAPI = {
   // Get current user profile
   getProfile: async () => {
     const response = await api.get('/auth/me');
+    return response.data;
+  },
+};
+
+// ==========================================
+// PROTECTION SETTINGS API FUNCTIONS
+// ==========================================
+
+export const protectionAPI = {
+  // Get current protection settings
+  getSettings: async () => {
+    const response = await api.get('/settings/protection');
+    return response.data;
+  },
+  
+  // Update protection settings
+  updateSettings: async (settings) => {
+    const response = await api.post('/settings/protection', settings);
+    return response.data;
+  },
+};
+
+// ==========================================
+// ALERTS API FUNCTIONS
+// ==========================================
+
+export const alertsAPI = {
+  // Get pending alerts
+  getPending: async () => {
+    const response = await api.get('/alerts/pending');
+    return response.data;
+  },
+  
+  // Acknowledge an alert
+  acknowledge: async (alertId, action = 'acknowledged') => {
+    const response = await api.post(`/alerts/acknowledge/${alertId}`, { action });
+    return response.data;
+  },
+  
+  // Get alert history
+  getHistory: async (limit = 50) => {
+    const response = await api.get(`/alerts/history?limit=${limit}`);
+    return response.data;
+  },
+  
+  // Simulate an incoming alert (for testing)
+  triggerAlert: async (alertData) => {
+    const response = await api.post('/alerts/trigger', alertData);
     return response.data;
   },
 };

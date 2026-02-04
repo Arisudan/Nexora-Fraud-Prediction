@@ -59,8 +59,8 @@ export function AuthProvider({ children }) {
     return { success: false, message: response.message };
   };
 
-  const register = async (name, email, password) => {
-    const response = await authAPI.register(name, email, password);
+  const register = async (registrationData) => {
+    const response = await authAPI.register(registrationData);
     
     if (response.success) {
       // Don't auto-login after registration
