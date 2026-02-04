@@ -18,8 +18,8 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      const token = sessionStorage.getItem('token');
+      const storedUser = sessionStorage.getItem('user');
 
       if (token && storedUser) {
         // Validate token by fetching profile
@@ -45,9 +45,9 @@ export function AuthProvider({ children }) {
     if (response.success) {
       const { user, token } = response.data;
       
-      // Store in localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Store in sessionStorage (clears on browser close/refresh)
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
       
       // Update state
       setUser(user);
@@ -73,8 +73,8 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     // Clear storage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     
     // Update state
     setUser(null);
@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
 
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    sessionStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   const value = {

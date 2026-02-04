@@ -705,8 +705,8 @@ router.post('/fraud/report', authenticateToken, [
     .notEmpty()
     .withMessage('Target entity (phone/email/UPI) is required'),
   body('entityType')
-    .isIn(['phone', 'email', 'upi', 'bank'])
-    .withMessage('Entity type must be one of: phone, email, upi, bank'),
+    .isIn(['phone', 'email', 'upi'])
+    .withMessage('Entity type must be one of: phone, email, upi'),
   body('category')
     .isIn([
       'Phishing', 'Identity Theft', 'Financial Fraud', 'Spam',
@@ -843,8 +843,8 @@ router.post('/check-risk', optionalAuth, [
     .withMessage('Entity (phone/email/UPI) is required'),
   body('entityType')
     .optional()
-    .isIn(['phone', 'email', 'upi', 'bank'])
-    .withMessage('Entity type must be one of: phone, email, upi, bank')
+    .isIn(['phone', 'email', 'upi'])
+    .withMessage('Entity type must be one of: phone, email, upi')
 ], validate, async (req, res) => {
   try {
     const { entity, entityType } = req.body;
@@ -1235,8 +1235,8 @@ router.post('/actions/block', authenticateToken, [
     .notEmpty()
     .withMessage('Entity is required'),
   body('entityType')
-    .isIn(['phone', 'email', 'upi', 'bank'])
-    .withMessage('Entity type must be one of: phone, email, upi, bank')
+    .isIn(['phone', 'email', 'upi'])
+    .withMessage('Entity type must be one of: phone, email, upi')
 ], validate, async (req, res) => {
   try {
     const { entity, entityType } = req.body;
@@ -1304,8 +1304,8 @@ router.post('/actions/mark-safe', authenticateToken, [
     .notEmpty()
     .withMessage('Entity is required'),
   body('entityType')
-    .isIn(['phone', 'email', 'upi', 'bank'])
-    .withMessage('Entity type must be one of: phone, email, upi, bank')
+    .isIn(['phone', 'email', 'upi'])
+    .withMessage('Entity type must be one of: phone, email, upi')
 ], validate, async (req, res) => {
   try {
     const { entity, entityType } = req.body;
@@ -1425,7 +1425,8 @@ router.get('/stats/overview', async (req, res) => {
       totalReports,
       recentReports,
       totalUsers,
-      categoryStats
+      categoryStats,
+      blockedEntitiesCount
     ] = await Promise.all([
       FraudReport.countDocuments({ isActive: true }),
       FraudReport.countDocuments({ 
@@ -1438,6 +1439,11 @@ router.get('/stats/overview', async (req, res) => {
         { $group: { _id: '$category', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 }
+      ]),
+      // Count total blocked entities across all users
+      User.aggregate([
+        { $unwind: { path: '$blockedEntities', preserveNullAndEmptyArrays: false } },
+        { $count: 'total' }
       ])
     ]);
     
@@ -1447,6 +1453,7 @@ router.get('/stats/overview', async (req, res) => {
         totalReports,
         recentReports,
         totalUsers,
+        blockedEntities: blockedEntitiesCount[0]?.total || 0,
         topCategories: categoryStats.map(c => ({
           category: c._id,
           count: c.count

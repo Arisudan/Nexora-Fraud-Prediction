@@ -9,6 +9,9 @@ const SocketContext = createContext(null);
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:5000';
 
+// Track if we've shown the initial connection toast
+let hasShownConnectionToast = false;
+
 export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -38,7 +41,11 @@ export function SocketProvider({ children }) {
 
     newSocket.on('connected', (data) => {
       console.log('✅ Real-time connection established:', data.message);
-      toast.success('Real-time protection active', { duration: 2000, icon: '🛡️' });
+      // Only show toast once per session to avoid spam
+      if (!hasShownConnectionToast) {
+        hasShownConnectionToast = true;
+        toast.success('Real-time protection active', { duration: 2000, icon: '🛡️' });
+      }
     });
 
     newSocket.on('disconnect', (reason) => {
@@ -177,7 +184,7 @@ export function SocketProvider({ children }) {
 
   // Auto-connect when token is available
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
     if (token && !socket) {
       connect(token);
     }

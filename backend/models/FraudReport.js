@@ -21,8 +21,8 @@ const FraudReportSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Entity type is required'],
     enum: {
-      values: ['phone', 'email', 'upi', 'bank'],
-      message: 'Entity type must be one of: phone, email, upi, bank'
+      values: ['phone', 'email', 'upi'],
+      message: 'Entity type must be one of: phone, email, upi'
     }
   },
   category: {

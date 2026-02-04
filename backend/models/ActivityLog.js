@@ -38,7 +38,7 @@ const ActivityLogSchema = new mongoose.Schema({
   },
   entityType: {
     type: String,
-    enum: ['phone', 'email', 'upi', 'bank', 'none'],
+    enum: ['phone', 'email', 'upi', 'none'],
     default: 'none'
   },
   details: {

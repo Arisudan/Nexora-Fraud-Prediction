@@ -11,7 +11,6 @@ const ENTITY_TYPES = [
   { value: 'phone', label: 'Phone', placeholder: 'Enter phone number' },
   { value: 'email', label: 'Email', placeholder: 'Enter email address' },
   { value: 'upi', label: 'UPI ID', placeholder: 'Enter UPI ID' },
-  { value: 'bank', label: 'Bank Account', placeholder: 'Enter account number' },
 ];
 
 export default function RiskChecker({ onBlock, onMarkSafe }) {

@@ -10,7 +10,6 @@ const ENTITY_TYPES = [
   { value: 'phone', label: 'Phone Number' },
   { value: 'email', label: 'Email Address' },
   { value: 'upi', label: 'UPI ID' },
-  { value: 'bank', label: 'Bank Account' },
 ];
 
 const CATEGORIES = [

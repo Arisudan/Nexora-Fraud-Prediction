@@ -98,12 +98,12 @@ const UserSchema = new mongoose.Schema({
   },
   blockedEntities: [{
     entity: { type: String },
-    entityType: { type: String, enum: ['phone', 'email', 'bank'] },
+    entityType: { type: String, enum: ['phone', 'email', 'upi'] },
     blockedAt: { type: Date, default: Date.now }
   }],
   markedSafeEntities: [{
     entity: { type: String },
-    entityType: { type: String, enum: ['phone', 'email', 'bank'] },
+    entityType: { type: String, enum: ['phone', 'email', 'upi'] },
     markedAt: { type: Date, default: Date.now }
   }],
   
