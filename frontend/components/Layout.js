@@ -1,0 +1,52 @@
+// FILE: components/Layout.js
+// Main layout wrapper component
+
+import Head from 'next/head';
+import Navbar from './Navbar';
+import Footer from './Footer';
+import { Toaster } from 'react-hot-toast';
+
+export default function Layout({ children, title = 'Nexora Fraud Predictor' }) {
+  const pageTitle = `${title} | Crowd Intelligence Fraud Detection`;
+  return (
+    <>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content="Predict scams before they happen using crowd intelligence. Check phone numbers, emails, and UPI IDs for fraud risk." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer />
+      </div>
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            iconTheme: {
+              primary: '#22c55e',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </>
+  );
+}

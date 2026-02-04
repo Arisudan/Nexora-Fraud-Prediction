@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        #output { background: #f0f0f0; padding: 20px; margin-top: 20px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Nexora Fraud Predictor - API Test</h1>
+    
+    <h2>1. Create Test Report</h2>
+    <button onclick="createReport()">Create Report for 9876543210 (Phishing)</button>
+    <button onclick="createEmailReport()">Create Report for scam@test.com (Identity Theft)</button>
+    
+    <h2>2. Check Risk</h2>
+    <input type="text" id="entity" placeholder="Enter phone/email" value="9876543210">
+    <button onclick="checkRisk()">Check Risk</button>
+    
+    <h2>3. View All Reports</h2>
+    <button onclick="viewReports()">View All Reports</button>
+    
+    <h3>Output:</h3>
+    <div id="output">Results will appear here...</div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        
+        async function createReport() {
+            try {
+                const res = await fetch(`${API_URL}/debug/test-report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetEntity: '9876543210',
+                        entityType: 'phone',
+                        category: 'Phishing',
+                        description: 'Test phishing report for debugging purposes'
+                    })
+                });
+                const data = await res.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                document.getElementById('output').textContent = 'Error: ' + err.message;
+            }
+        }
+        
+        async function createEmailReport() {
+            try {
+                const res = await fetch(`${API_URL}/debug/test-report`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetEntity: 'scam@test.com',
+                        entityType: 'email',
+                        category: 'Identity Theft',
+                        description: 'Test identity theft report for debugging purposes'
+                    })
+                });
+                const data = await res.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                document.getElementById('output').textContent = 'Error: ' + err.message;
+            }
+        }
+        
+        async function checkRisk() {
+            const entity = document.getElementById('entity').value;
+            try {
+                const res = await fetch(`${API_URL}/check-risk`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetEntity: entity })
+                });
+                const data = await res.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                document.getElementById('output').textContent = 'Error: ' + err.message;
+            }
+        }
+        
+        async function viewReports() {
+            try {
+                const res = await fetch(`${API_URL}/debug/all-reports`);
+                const data = await res.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                document.getElementById('output').textContent = 'Error: ' + err.message;
+            }
+        }
+    </script>
+</body>
+</html>
