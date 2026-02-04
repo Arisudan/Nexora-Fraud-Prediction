@@ -223,28 +223,31 @@ export default function Dashboard() {
 
         {/* Protection Status Card */}
         {protectionSettings && (
-          <div className="mb-8 bg-gradient-to-r from-primary-600 via-blue-600 to-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute top-0 right-0 w-64 h-64 transform translate-x-32 -translate-y-32">
-              <div className="w-full h-full rounded-full bg-white/10"></div>
+          <div className="mb-8 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-xl animate-pulse-glow">
+            {/* Animated Background */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full filter blur-3xl transform translate-x-20 -translate-y-20 animate-float"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-300/10 rounded-full filter blur-3xl transform -translate-x-20 translate-y-20 animate-float" style={{ animationDelay: '-2s' }}></div>
             </div>
             
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                    <FiShield className="w-6 h-6" />
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                    <FiShield className="w-7 h-7" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold">Protection Status</h2>
+                    <h2 className="text-2xl font-bold">Protection Status</h2>
                     <p className="text-white/80 text-sm flex items-center gap-2">
                       {isConnected ? (
                         <>
-                          <FiWifi className="w-4 h-4 text-green-300" />
-                          <span className="text-green-300">Real-time active</span>
+                          <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                          <FiWifi className="w-4 h-4 text-emerald-300" />
+                          <span className="text-emerald-300">Real-time active</span>
                         </>
                       ) : (
                         <>
+                          <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
                           <FiWifiOff className="w-4 h-4 text-yellow-300" />
                           <span className="text-yellow-300">Connecting...</span>
                         </>
@@ -253,7 +256,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <Link href="/settings">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium">
+                  <button className="flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all text-sm font-medium hover:scale-105">
                     <FiSettings className="w-4 h-4" />
                     Manage
                   </button>
@@ -261,45 +264,45 @@ export default function Dashboard() {
               </div>
 
               {/* Protection Items */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl ${
+              <div className="grid grid-cols-3 gap-3">
+                <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl backdrop-blur-sm transition-all hover:scale-105 ${
                   protectionSettings.callProtection?.enabled 
-                    ? 'bg-green-500/30 border border-green-400/50' 
-                    : 'bg-white/10'
+                    ? 'bg-emerald-500/30 border border-emerald-400/50 shadow-lg shadow-emerald-500/20' 
+                    : 'bg-red-500/30 border border-red-400/50 shadow-lg shadow-red-500/20'
                 }`}>
                   <FiPhone className="w-5 h-5" />
                   <div>
-                    <p className="text-sm font-medium">Call</p>
-                    <p className="text-xs text-white/70">
-                      {protectionSettings.callProtection?.enabled ? '✓ Active' : 'Inactive'}
+                    <p className="text-sm font-semibold">Call</p>
+                    <p className={`text-xs ${protectionSettings.callProtection?.enabled ? 'text-emerald-200' : 'text-red-200'}`}>
+                      {protectionSettings.callProtection?.enabled ? '✓ Active' : '✗ Inactive'}
                     </p>
                   </div>
                 </div>
                 
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl ${
+                <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl backdrop-blur-sm transition-all hover:scale-105 ${
                   protectionSettings.smsProtection?.enabled 
-                    ? 'bg-green-500/30 border border-green-400/50' 
-                    : 'bg-white/10'
+                    ? 'bg-emerald-500/30 border border-emerald-400/50 shadow-lg shadow-emerald-500/20' 
+                    : 'bg-red-500/30 border border-red-400/50 shadow-lg shadow-red-500/20'
                 }`}>
                   <FiMessageSquare className="w-5 h-5" />
                   <div>
-                    <p className="text-sm font-medium">SMS</p>
-                    <p className="text-xs text-white/70">
-                      {protectionSettings.smsProtection?.enabled ? '✓ Active' : 'Inactive'}
+                    <p className="text-sm font-semibold">SMS</p>
+                    <p className={`text-xs ${protectionSettings.smsProtection?.enabled ? 'text-emerald-200' : 'text-red-200'}`}>
+                      {protectionSettings.smsProtection?.enabled ? '✓ Active' : '✗ Inactive'}
                     </p>
                   </div>
                 </div>
                 
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl ${
+                <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl backdrop-blur-sm transition-all hover:scale-105 ${
                   protectionSettings.emailProtection?.enabled 
-                    ? 'bg-green-500/30 border border-green-400/50' 
-                    : 'bg-white/10'
+                    ? 'bg-emerald-500/30 border border-emerald-400/50 shadow-lg shadow-emerald-500/20' 
+                    : 'bg-red-500/30 border border-red-400/50 shadow-lg shadow-red-500/20'
                 }`}>
                   <FiMail className="w-5 h-5" />
                   <div>
-                    <p className="text-sm font-medium">Email</p>
-                    <p className="text-xs text-white/70">
-                      {protectionSettings.emailProtection?.enabled ? '✓ Active' : 'Inactive'}
+                    <p className="text-sm font-semibold">Email</p>
+                    <p className={`text-xs ${protectionSettings.emailProtection?.enabled ? 'text-emerald-200' : 'text-red-200'}`}>
+                      {protectionSettings.emailProtection?.enabled ? '✓ Active' : '✗ Inactive'}
                     </p>
                   </div>
                 </div>
@@ -327,73 +330,73 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FiFileText className="w-6 h-6 text-blue-600" />
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-100 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                <FiFileText className="w-7 h-7 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {loadingStats ? '-' : stats?.totalReports?.toLocaleString() || 0}
+                <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  {loadingStats ? <span className="skeleton w-12 h-8 block rounded"></span> : stats?.totalReports?.toLocaleString() || 0}
                 </p>
-                <p className="text-sm text-gray-500">Total Reports</p>
+                <p className="text-sm text-gray-500 font-medium">Total Reports</p>
               </div>
             </div>
           </div>
 
-          <div className="card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <FiUsers className="w-6 h-6 text-green-600" />
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-100 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                <FiUsers className="w-7 h-7 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {loadingStats ? '-' : stats?.totalUsers?.toLocaleString() || 0}
+                <p className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                  {loadingStats ? <span className="skeleton w-12 h-8 block rounded"></span> : stats?.totalUsers?.toLocaleString() || 0}
                 </p>
-                <p className="text-sm text-gray-500">Users</p>
+                <p className="text-sm text-gray-500 font-medium">Users</p>
               </div>
             </div>
           </div>
 
-          <div className="card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <FiTrendingUp className="w-6 h-6 text-orange-600" />
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-100 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                <FiTrendingUp className="w-7 h-7 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {loadingStats ? '-' : stats?.recentReports?.toLocaleString() || 0}
+                <p className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                  {loadingStats ? <span className="skeleton w-12 h-8 block rounded"></span> : stats?.recentReports?.toLocaleString() || 0}
                 </p>
-                <p className="text-sm text-gray-500">Last 30 Days</p>
+                <p className="text-sm text-gray-500 font-medium">Last 30 Days</p>
               </div>
             </div>
           </div>
 
-          <div className="card">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <FiShield className="w-6 h-6 text-purple-600" />
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-100 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
+                <FiShield className="w-7 h-7 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {loadingStats ? '-' : stats?.blockedEntities?.toLocaleString() || 0}
+                <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  {loadingStats ? <span className="skeleton w-12 h-8 block rounded"></span> : stats?.blockedEntities?.toLocaleString() || 0}
                 </p>
-                <p className="text-sm text-gray-500">Blocked</p>
+                <p className="text-sm text-gray-500 font-medium">Blocked</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-4">
+        <div className="flex flex-wrap gap-3 mb-6 border-b border-gray-200 pb-4">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
                 activeTab === tab.id
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 scale-105'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-purple-300'
               }`}
             >
               <tab.icon className="w-5 h-5" />

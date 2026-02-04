@@ -102,14 +102,14 @@ export default function FraudReportForm({ onSuccess }) {
   };
 
   return (
-    <div className="card">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-          <FiAlertTriangle className="w-6 h-6 text-red-600" />
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30">
+          <FiAlertTriangle className="w-7 h-7 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Report Fraud</h2>
-          <p className="text-gray-500 text-sm">Help protect others by reporting suspicious activity</p>
+          <h2 className="text-2xl font-bold text-gray-900">Report Fraud</h2>
+          <p className="text-gray-500">Help protect others by reporting suspicious activity</p>
         </div>
       </div>
 
@@ -117,14 +117,14 @@ export default function FraudReportForm({ onSuccess }) {
         {/* Entity Type & Target */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Type
             </label>
             <select
               name="entityType"
               value={formData.entityType}
               onChange={handleChange}
-              className="input-field"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none bg-white"
             >
               {ENTITY_TYPES.map(type => (
                 <option key={type.value} value={type.value}>{type.label}</option>
@@ -132,8 +132,8 @@ export default function FraudReportForm({ onSuccess }) {
             </select>
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone/Email/UPI ID/Account Number *
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Phone/Email/UPI ID *
             </label>
             <input
               type="text"
@@ -141,7 +141,11 @@ export default function FraudReportForm({ onSuccess }) {
               value={formData.targetEntity}
               onChange={handleChange}
               placeholder="Enter the fraudulent entity"
-              className={`input-field ${errors.targetEntity ? 'input-error' : ''}`}
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                errors.targetEntity 
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                  : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+              }`}
             />
             {errors.targetEntity && (
               <p className="text-red-500 text-sm mt-1">{errors.targetEntity}</p>
@@ -151,27 +155,27 @@ export default function FraudReportForm({ onSuccess }) {
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
             Fraud Category *
           </label>
           <select
             name="category"
             value={formData.category}
             onChange={handleChange}
-            className="input-field"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none bg-white"
           >
             {CATEGORIES.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
-          <p className="text-xs text-gray-400 mt-1">
-            Note: Phishing and Identity Theft reports carry higher weight in our scoring system
+          <p className="text-xs text-gray-400 mt-2">
+            ⚠️ Phishing and Identity Theft reports carry higher weight in our scoring system
           </p>
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
             Description *
           </label>
           <textarea
@@ -180,7 +184,11 @@ export default function FraudReportForm({ onSuccess }) {
             onChange={handleChange}
             rows={4}
             placeholder="Describe what happened, how you were contacted, what they asked for..."
-            className={`input-field resize-none ${errors.description ? 'input-error' : ''}`}
+            className={`w-full px-4 py-3 border-2 rounded-xl resize-none transition-all outline-none focus:ring-4 ${
+              errors.description 
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+            }`}
           />
           {errors.description && (
             <p className="text-red-500 text-sm mt-1">{errors.description}</p>
@@ -189,8 +197,8 @@ export default function FraudReportForm({ onSuccess }) {
 
         {/* Evidence */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Evidence (Optional)
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Evidence <span className="text-gray-400 font-normal">(Optional)</span>
           </label>
           <textarea
             name="evidence"
@@ -198,24 +206,28 @@ export default function FraudReportForm({ onSuccess }) {
             onChange={handleChange}
             rows={3}
             placeholder="Paste any messages, URLs, or additional evidence..."
-            className="input-field resize-none"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl resize-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
           />
         </div>
 
         {/* Amount Lost */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Amount Lost (Optional)
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Amount Lost <span className="text-gray-400 font-normal">(Optional)</span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₹</span>
             <input
               type="text"
               name="amountLost"
               value={formData.amountLost}
               onChange={handleChange}
               placeholder="0"
-              className={`input-field pl-8 ${errors.amountLost ? 'input-error' : ''}`}
+              className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                errors.amountLost 
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                  : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+              }`}
             />
           </div>
           {errors.amountLost && (
@@ -227,7 +239,7 @@ export default function FraudReportForm({ onSuccess }) {
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary w-full flex items-center justify-center gap-2 py-3"
+          className="w-full py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold rounded-xl shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
         >
           {loading ? (
             <>

@@ -59,10 +59,11 @@ export default function Settings() {
     try {
       const response = await alertsAPI.getHistory(50);
       if (response.success) {
-        setAlertHistory(response.data.alerts);
+        setAlertHistory(response.data?.alerts || []);
       }
     } catch (error) {
       console.error('Failed to fetch alert history:', error);
+      setAlertHistory([]);
     }
   };
 
@@ -178,8 +179,8 @@ export default function Settings() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-                <FiSettings className="w-6 h-6 text-primary-600" />
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <FiSettings className="w-7 h-7 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
@@ -189,16 +190,16 @@ export default function Settings() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mb-6 bg-white p-1.5 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex gap-2 mb-6 bg-white p-2 rounded-2xl shadow-md border border-gray-100">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
                     activeTab === tab.id
-                      ? 'bg-primary-600 text-white shadow-md'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
@@ -212,8 +213,12 @@ export default function Settings() {
           {activeTab === 'protection' && (
             <>
               {/* Protection Summary */}
-              <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-2xl p-6 mb-6 text-white">
-                <div className="flex items-center justify-between">
+              <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-2xl p-6 mb-6 text-white shadow-xl">
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/30 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/30 rounded-full blur-3xl transform -translate-x-10 translate-y-10"></div>
+                </div>
+                <div className="relative flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-bold">Protection Status</h2>
                     <p className="text-white/80 mt-1">
@@ -224,14 +229,14 @@ export default function Settings() {
                     </p>
                   </div>
                   <div className="text-5xl font-bold">
-                    {enabledCount}/4
+                    {enabledCount}/3
                   </div>
                 </div>
                 
                 {enabledCount > 0 && (
-                  <div className="flex gap-2 mt-4 flex-wrap">
+                  <div className="relative flex gap-2 mt-4 flex-wrap">
                     {protectionOptions.filter(o => settings[o.id]?.enabled).map(option => (
-                      <span key={option.id} className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
+                      <span key={option.id} className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">
                         ✓ {option.title}
                       </span>
                     ))}
@@ -351,7 +356,7 @@ export default function Settings() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="btn-primary flex items-center gap-2 px-8 py-3 text-lg"
+                  className="flex items-center gap-2 px-8 py-3 text-lg font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {saving ? (
                     <>
@@ -370,13 +375,13 @@ export default function Settings() {
           )}
 
           {activeTab === 'history' && (
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-lg">
+              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                 <h2 className="text-xl font-bold text-gray-900">Alert History</h2>
                 <p className="text-gray-600 text-sm mt-1">Your recent fraud/spam alerts</p>
               </div>
               
-              {alertHistory.length === 0 ? (
+              {!alertHistory || alertHistory.length === 0 ? (
                 <div className="p-12 text-center">
                   <FiShield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-700">No Alert History</h3>

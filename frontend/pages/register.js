@@ -1,7 +1,7 @@
 // FILE: pages/register.js
 // User Registration Page with Protection Settings - Industrial Grade
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Layout from '../components/Layout';
@@ -9,8 +9,26 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { 
   FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiLoader, FiUserPlus,
-  FiPhone, FiMessageSquare, FiShield, FiCheck, FiArrowRight
+  FiPhone, FiMessageSquare, FiShield, FiCheck, FiArrowRight, FiCheckCircle
 } from 'react-icons/fi';
+
+// Password strength calculator
+const calculatePasswordStrength = (password) => {
+  if (!password) return { score: 0, label: '', color: 'gray' };
+  
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (/[a-z]/.test(password)) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^a-zA-Z0-9]/.test(password)) score++;
+  
+  if (score <= 2) return { score: 1, label: 'Weak', color: 'red' };
+  if (score <= 3) return { score: 2, label: 'Fair', color: 'orange' };
+  if (score <= 4) return { score: 3, label: 'Good', color: 'yellow' };
+  return { score: 4, label: 'Strong', color: 'emerald' };
+};
 
 export default function Register() {
   const router = useRouter();
@@ -34,6 +52,12 @@ export default function Register() {
   });
   
   const [errors, setErrors] = useState({});
+
+  // Calculate password strength
+  const passwordStrength = useMemo(() => 
+    calculatePasswordStrength(formData.password), 
+    [formData.password]
+  );
 
   // Redirect if already authenticated
   if (isAuthenticated) {
@@ -92,8 +116,10 @@ export default function Register() {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (passwordStrength.score < 2) {
+      newErrors.password = 'Password is too weak. Add uppercase, numbers, or symbols';
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -314,11 +340,11 @@ export default function Register() {
 
                 {/* Password Field */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                     Password <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       id="password"
                       name="password"
@@ -326,16 +352,48 @@ export default function Register() {
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="••••••••"
-                      className={`input-field pl-10 pr-10 ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
+                      className={`w-full pl-12 pr-12 py-3.5 border-2 rounded-xl transition-all duration-300 focus:ring-4 outline-none ${
+                        errors.password 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                          : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
                     </button>
                   </div>
+                  {/* Password Strength Indicator */}
+                  {formData.password && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              passwordStrength.color === 'red' ? 'bg-red-500 w-1/4' :
+                              passwordStrength.color === 'orange' ? 'bg-orange-500 w-2/4' :
+                              passwordStrength.color === 'yellow' ? 'bg-yellow-500 w-3/4' :
+                              'bg-emerald-500 w-full'
+                            }`}
+                          />
+                        </div>
+                        <span className={`text-sm font-medium ${
+                          passwordStrength.color === 'red' ? 'text-red-600' :
+                          passwordStrength.color === 'orange' ? 'text-orange-600' :
+                          passwordStrength.color === 'yellow' ? 'text-yellow-600' :
+                          'text-emerald-600'
+                        }`}>
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Use 8+ characters with uppercase, numbers & symbols
+                      </p>
+                    </div>
+                  )}
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
 

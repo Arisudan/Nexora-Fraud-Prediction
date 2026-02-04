@@ -13,135 +13,237 @@ body {
 
 /* Custom component classes */
 @layer components {
+  /* Gradient Buttons */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+    @apply bg-white/10 backdrop-blur-sm border border-gray-200 hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-all duration-200;
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+    @apply bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
   }
 
   .btn-success {
-    @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+    @apply bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
   }
 
+  .btn-ghost {
+    @apply bg-transparent hover:bg-white/10 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  }
+
+  /* Input Fields with Animations */
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200;
+    @apply w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 outline-none transition-all duration-300;
+  }
+
+  .input-field-dark {
+    @apply w-full px-4 py-3 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/50 focus:border-purple-400 focus:ring-4 focus:ring-purple-400/20 outline-none transition-all duration-300;
   }
 
   .input-error {
-    @apply border-red-500 focus:ring-red-500 focus:border-red-500;
+    @apply border-red-500 focus:border-red-500 focus:ring-red-500/20;
   }
 
+  .input-success {
+    @apply border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500/20;
+  }
+
+  /* Cards */
   .card {
-    @apply bg-white rounded-xl shadow-md p-6;
+    @apply bg-white rounded-2xl shadow-lg p-6 border border-gray-100;
   }
 
   .card-hover {
-    @apply card hover:shadow-lg transition-shadow duration-200;
+    @apply card hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer;
   }
 
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg p-6 border border-gray-100;
+  }
+
+  .card-glass {
+    @apply bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-white/20;
+  }
+
+  /* Badges with Glow */
   .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold;
   }
 
   .badge-safe {
-    @apply badge bg-green-100 text-green-800;
+    @apply badge bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-200;
   }
 
   .badge-suspicious {
-    @apply badge bg-yellow-100 text-yellow-800;
+    @apply badge bg-amber-100 text-amber-700 shadow-sm shadow-amber-200;
   }
 
   .badge-danger {
-    @apply badge bg-red-100 text-red-800;
+    @apply badge bg-red-100 text-red-700 shadow-sm shadow-red-200;
   }
 
+  .badge-info {
+    @apply badge bg-blue-100 text-blue-700 shadow-sm shadow-blue-200;
+  }
+
+  /* Section Titles */
   .section-title {
     @apply text-2xl font-bold text-gray-900 mb-4;
   }
 
+  /* Navigation */
   .nav-link {
-    @apply text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200;
+    @apply text-gray-600 hover:text-purple-600 font-medium transition-colors duration-200;
   }
 
   .nav-link-active {
-    @apply text-primary-600 font-semibold;
+    @apply text-purple-600 font-semibold;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-lg;
+  }
+
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10 shadow-lg;
   }
 }
 
 /* Animation keyframes */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.6); }
 }
 
-.animate-slideIn {
-  animation: slideIn 0.3s ease-out;
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }
 
-.animate-scaleIn {
-  animation: scaleIn 0.2s ease-out;
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gauge-fill {
+  from { stroke-dashoffset: 283; }
+}
+
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+.animate-slideIn { animation: slideIn 0.3s ease-out; }
+.animate-slideUp { animation: slideUp 0.4s ease-out; }
+.animate-scaleIn { animation: scaleIn 0.2s ease-out; }
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-shake { animation: shake 0.5s ease-in-out; }
+.animate-gradient { 
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Risk Level Glow Effects */
+.glow-safe {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
+}
+
+.glow-suspicious {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2);
+}
+
+.glow-danger {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+}
+
+.glow-purple {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 0 60px rgba(139, 92, 246, 0.2);
 }
 
 /* Risk meter styles */
 .risk-meter-safe {
-  @apply bg-gradient-to-r from-green-400 to-green-600;
+  @apply bg-gradient-to-r from-emerald-400 to-green-500;
 }
 
 .risk-meter-suspicious {
-  @apply bg-gradient-to-r from-yellow-400 to-yellow-600;
+  @apply bg-gradient-to-r from-amber-400 to-orange-500;
 }
 
 .risk-meter-danger {
-  @apply bg-gradient-to-r from-red-400 to-red-600;
+  @apply bg-gradient-to-r from-red-500 to-rose-600;
 }
 
 /* Loading spinner */
 .spinner {
-  @apply animate-spin rounded-full border-4 border-gray-200 border-t-primary-600;
+  @apply animate-spin rounded-full border-4 border-gray-200 border-t-purple-600;
 }
 
-/* Toast customization */
-.Toastify__toast {
-  @apply rounded-lg shadow-lg;
+/* Skeleton loader */
+.skeleton {
+  @apply bg-gray-200 rounded animate-pulse;
 }
+
+.skeleton-text {
+  @apply skeleton h-4 w-full rounded;
+}
+
+.skeleton-circle {
+  @apply skeleton rounded-full;
+}
+
+/* Password Strength Bar */
+.password-strength-bar {
+  @apply h-2 rounded-full transition-all duration-300;
+}
+
+.password-weak { @apply bg-red-500 w-1/4; }
+.password-fair { @apply bg-orange-500 w-2/4; }
+.password-good { @apply bg-yellow-500 w-3/4; }
+.password-strong { @apply bg-emerald-500 w-full; }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -154,15 +256,77 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded hover:bg-gray-400;
+  @apply bg-gradient-to-b from-purple-400 to-indigo-500 rounded hover:from-purple-500 hover:to-indigo-600;
 }
 
 /* Focus styles for accessibility */
 *:focus-visible {
-  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  @apply outline-none ring-2 ring-purple-500 ring-offset-2;
+}
+
+/* Gradient Text */
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600;
+}
+
+/* Hero Background Particles */
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-particles::before,
+.hero-particles::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  opacity: 0.1;
+  animation: float 6s ease-in-out infinite;
+}
+
+.hero-particles::before {
+  background: radial-gradient(circle, #fff 0%, transparent 70%);
+  top: 10%;
+  left: 10%;
+}
+
+.hero-particles::after {
+  background: radial-gradient(circle, #fff 0%, transparent 70%);
+  bottom: 10%;
+  right: 10%;
+  animation-delay: -3s;
+}
+
+/* Scan Animation for Risk Check */
+.scan-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(139, 92, 246, 0.3) 50%, transparent 100%);
+  animation: scan-line 1.5s ease-in-out infinite;
 }
 
 /* Link styles */
 a {
   @apply transition-colors duration-200;
+}
+
+/* Responsive utilities */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

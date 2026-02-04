@@ -78,14 +78,32 @@ export default function QuickCheckWidget() {
         };
         setResult(resultWithEntity);
         
-        // Show popup for risky entities (medium, high, critical)
-        if (response.data.riskLevel === 'critical' || 
-            response.data.riskLevel === 'high' || 
-            response.data.riskLevel === 'medium') {
+        // Map backend risk level to frontend level
+        const backendLevel = response.data.riskLevel;
+        const mappedLevel = mapRiskLevel(backendLevel);
+        
+        if (mappedLevel === 'critical' || mappedLevel === 'high' || mappedLevel === 'medium') {
+          // Show popup for risky entities
           setShowPopup(true);
+          // Also show a danger toast
+          const displayLevel = mappedLevel === 'critical' ? 'HIGH RISK' : mappedLevel === 'medium' ? 'SUSPICIOUS' : mappedLevel.toUpperCase();
+          toast.error(`⚠️ ${displayLevel} - Be careful!`, { duration: 4000 });
+        } else if (mappedLevel === 'low') {
+          // Low risk - show warning toast (not safe!)
+          toast.custom((t) => (
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-blue-50 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-blue-200 p-4`}>
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🔵</span>
+                <div>
+                  <p className="font-semibold text-blue-800">Low Risk - Some reports exist</p>
+                  <p className="text-sm text-blue-600">Proceed with caution</p>
+                </div>
+              </div>
+            </div>
+          ), { duration: 4000 });
         } else {
-          // Safe or low risk entity - show toast
-          toast.success('✅ This appears to be safe!', { duration: 3000 });
+          // Truly safe - no reports
+          toast.success('✅ This appears to be safe! No reports found.', { duration: 3000 });
         }
       }
     } catch (error) {
@@ -102,8 +120,26 @@ export default function QuickCheckWidget() {
     inputRef.current?.focus();
   };
 
+  // Map backend risk levels to frontend config
+  const mapRiskLevel = (level) => {
+    const mapping = {
+      'high_risk': 'critical',
+      'suspicious': 'medium',
+      'low': 'low',
+      'safe': 'safe',
+      // Also support frontend-style names if already mapped
+      'critical': 'critical',
+      'high': 'high',
+      'medium': 'medium'
+    };
+    return mapping[level] || 'safe';
+  };
+
   const getRiskConfig = (level) => {
-    switch (level) {
+    // Map backend levels to frontend levels
+    const mappedLevel = mapRiskLevel(level);
+    
+    switch (mappedLevel) {
       case 'critical':
         return {
           bg: 'bg-red-600',
@@ -160,21 +196,30 @@ export default function QuickCheckWidget() {
   return (
     <>
       {/* Quick Check Card */}
-      <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-1 shadow-2xl">
-        <div className="bg-white rounded-xl p-6">
+      <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-2xl p-1 shadow-2xl shadow-purple-500/20">
+        <div className="bg-white rounded-xl p-6 relative overflow-hidden">
+          {/* Scanning overlay when checking */}
+          {checking && (
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 z-10">
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute inset-x-0 h-24 bg-gradient-to-b from-purple-500/30 via-purple-500/10 to-transparent animate-[scan-line_1.5s_ease-in-out_infinite]" />
+              </div>
+            </div>
+          )}
+
           {/* Header */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <FiShield className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-4 mb-5 relative z-20">
+            <div className={`w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30 ${checking ? 'animate-pulse' : ''}`}>
+              <FiShield className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Quick Protection Check</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Quick Protection Check</h2>
               <p className="text-sm text-gray-500">Check before you answer or open!</p>
             </div>
           </div>
 
           {/* Search Form */}
-          <form onSubmit={handleCheck} className="space-y-4">
+          <form onSubmit={handleCheck} className="space-y-4 relative z-20">
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                 {detectedType ? (
@@ -189,13 +234,18 @@ export default function QuickCheckWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Paste phone number or email here..."
-                className="w-full pl-12 pr-12 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
+                className={`w-full pl-12 pr-12 py-4 text-lg border-2 rounded-xl transition-all duration-300 ${
+                  checking 
+                    ? 'border-purple-400 ring-4 ring-purple-200 bg-purple-50' 
+                    : 'border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100'
+                }`}
+                disabled={checking}
               />
-              {input && (
+              {input && !checking && (
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <FiX className="w-5 h-5" />
                 </button>

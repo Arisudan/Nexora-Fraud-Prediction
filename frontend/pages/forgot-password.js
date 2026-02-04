@@ -124,12 +124,12 @@ export default function ForgotPassword() {
 
   return (
     <Layout title="Forgot Password">
-      <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-purple-50">
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiKey className="w-8 h-8 text-primary-600" />
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/30">
+              <FiKey className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Reset Password</h1>
             <p className="text-gray-600 mt-2">
@@ -143,36 +143,40 @@ export default function ForgotPassword() {
           <div className="flex items-center justify-center mb-8">
             {[1, 2, 3].map((s) => (
               <div key={s} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                  step >= s ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg ${
+                  step >= s ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/30' : 'bg-gray-200 text-gray-500'
                 }`}>
                   {step > s ? <FiCheck /> : s}
                 </div>
                 {s < 3 && (
-                  <div className={`w-12 h-1 ${step > s ? 'bg-primary-600' : 'bg-gray-200'}`} />
+                  <div className={`w-12 h-1 rounded-full ${step > s ? 'bg-gradient-to-r from-purple-500 to-indigo-600' : 'bg-gray-200'}`} />
                 )}
               </div>
             ))}
           </div>
 
           {/* Form Card */}
-          <div className="card">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Step 1: Email */}
             {step === 1 && (
               <form onSubmit={handleRequestOTP} className="space-y-5">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                     Email Address
                   </label>
                   <div className="relative">
-                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       id="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className={`input-field pl-10 ${errors.email ? 'input-error' : ''}`}
+                      className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                        errors.email 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                          : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+                      }`}
                     />
                   </div>
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
@@ -181,7 +185,7 @@ export default function ForgotPassword() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-primary py-3 flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {loading ? (
                     <>
@@ -199,7 +203,7 @@ export default function ForgotPassword() {
             {step === 2 && (
               <form onSubmit={handleVerifyOTP} className="space-y-5">
                 <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="otp" className="block text-sm font-semibold text-gray-700 mb-2">
                     Enter 6-Digit OTP
                   </label>
                   <input
@@ -209,7 +213,11 @@ export default function ForgotPassword() {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className={`input-field text-center text-2xl tracking-widest ${errors.otp ? 'input-error' : ''}`}
+                    className={`w-full px-4 py-4 text-center text-2xl tracking-widest font-mono border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                      errors.otp 
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                        : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+                    }`}
                   />
                   {errors.otp && <p className="text-red-500 text-sm mt-1">{errors.otp}</p>}
                   <p className="text-gray-500 text-sm mt-2">
@@ -220,7 +228,7 @@ export default function ForgotPassword() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-primary py-3 flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {loading ? (
                     <>
@@ -235,7 +243,7 @@ export default function ForgotPassword() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="w-full text-gray-600 text-sm hover:text-primary-600"
+                  className="w-full text-gray-600 text-sm hover:text-purple-600 transition-colors"
                 >
                   ← Back to email
                 </button>
@@ -246,23 +254,27 @@ export default function ForgotPassword() {
             {step === 3 && (
               <form onSubmit={handleResetPassword} className="space-y-5">
                 <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700 mb-2">
                     New Password
                   </label>
                   <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       id="newPassword"
                       type={showPassword ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      className={`input-field pl-10 pr-10 ${errors.newPassword ? 'input-error' : ''}`}
+                      className={`w-full pl-12 pr-12 py-3 border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                        errors.newPassword 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                          : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
                     </button>
@@ -271,18 +283,22 @@ export default function ForgotPassword() {
                 </div>
 
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
                     Confirm New Password
                   </label>
                   <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       id="confirmPassword"
                       type={showPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className={`input-field pl-10 ${errors.confirmPassword ? 'input-error' : ''}`}
+                      className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                        errors.confirmPassword 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                          : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+                      }`}
                     />
                   </div>
                   {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
@@ -291,7 +307,7 @@ export default function ForgotPassword() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-primary py-3 flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {loading ? (
                     <>
@@ -307,7 +323,7 @@ export default function ForgotPassword() {
 
             {/* Back to Login */}
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-sm text-gray-600 hover:text-primary-600 inline-flex items-center gap-1">
+              <Link href="/login" className="text-sm text-gray-600 hover:text-purple-600 inline-flex items-center gap-1 transition-colors">
                 <FiArrowLeft className="w-4 h-4" />
                 Back to Sign In
               </Link>

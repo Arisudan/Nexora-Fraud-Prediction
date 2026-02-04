@@ -134,22 +134,22 @@ export default function KYC() {
 
   return (
     <Layout title="KYC Verification">
-      <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-purple-50">
         <div className="w-full max-w-md">
           {/* Progress Steps */}
           <div className="flex items-center justify-center gap-4 mb-8">
-            <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200'
+            <div className={`flex items-center gap-2 ${step >= 1 ? 'text-purple-600' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg ${
+                step >= 1 ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/30' : 'bg-gray-200'
               }`}>
                 {step > 1 ? <FiCheckCircle className="w-5 h-5" /> : '1'}
               </div>
               <span className="text-sm font-medium hidden sm:inline">Personal Info</span>
             </div>
-            <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-primary-600' : 'bg-gray-200'}`} />
-            <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200'
+            <div className={`w-12 h-1 rounded-full ${step >= 2 ? 'bg-gradient-to-r from-purple-500 to-indigo-600' : 'bg-gray-200'}`} />
+            <div className={`flex items-center gap-2 ${step >= 2 ? 'text-purple-600' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg ${
+                step >= 2 ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/30' : 'bg-gray-200'
               }`}>
                 2
               </div>
@@ -171,16 +171,16 @@ export default function KYC() {
           </div>
 
           {/* Form Card */}
-          <div className="card">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {step === 1 ? (
               <form onSubmit={handleSubmitInfo} className="space-y-5">
                 {/* Phone Field */}
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
                     Phone Number *
                   </label>
                   <div className="relative">
-                    <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       id="phone"
                       name="phone"
@@ -188,7 +188,11 @@ export default function KYC() {
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="9876543210"
-                      className={`input-field pl-10 ${errors.phone ? 'input-error' : ''}`}
+                      className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                        errors.phone 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                          : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+                      }`}
                     />
                   </div>
                   {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
@@ -196,11 +200,11 @@ export default function KYC() {
 
                 {/* Address Field */}
                 <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                    Address (Optional)
+                  <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Address <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
                   <div className="relative">
-                    <FiMapPin className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                    <FiMapPin className="absolute left-4 top-3 text-gray-400 w-5 h-5" />
                     <textarea
                       id="address"
                       name="address"
@@ -208,18 +212,18 @@ export default function KYC() {
                       onChange={handleChange}
                       rows={3}
                       placeholder="Enter your address"
-                      className="input-field pl-10 resize-none"
+                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl resize-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
                     />
                   </div>
                 </div>
 
                 {/* ID Number Field */}
                 <div>
-                  <label htmlFor="idNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    ID Number (Optional)
+                  <label htmlFor="idNumber" className="block text-sm font-semibold text-gray-700 mb-2">
+                    ID Number <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
                   <div className="relative">
-                    <FiCreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <FiCreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       id="idNumber"
                       name="idNumber"
@@ -227,7 +231,7 @@ export default function KYC() {
                       value={formData.idNumber}
                       onChange={handleChange}
                       placeholder="Aadhaar / PAN / Passport Number"
-                      className="input-field pl-10"
+                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
                     />
                   </div>
                 </div>
@@ -236,7 +240,7 @@ export default function KYC() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-3"
+                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {loading ? (
                     <>
@@ -254,14 +258,14 @@ export default function KYC() {
             ) : (
               <form onSubmit={handleVerifyOTP} className="space-y-5">
                 {/* Phone Display */}
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 text-center border border-purple-100">
                   <p className="text-sm text-gray-600">OTP sent to</p>
                   <p className="text-lg font-semibold text-gray-900">+91 {formData.phone}</p>
                 </div>
 
                 {/* OTP Input */}
                 <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="otp" className="block text-sm font-semibold text-gray-700 mb-2">
                     Enter OTP
                   </label>
                   <input
@@ -274,15 +278,19 @@ export default function KYC() {
                     }}
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
-                    className={`input-field text-center text-2xl tracking-widest font-mono ${errors.otp ? 'input-error' : ''}`}
+                    className={`w-full px-4 py-4 text-center text-2xl tracking-widest font-mono border-2 rounded-xl transition-all outline-none focus:ring-4 ${
+                      errors.otp 
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                        : 'border-gray-200 focus:border-purple-500 focus:ring-purple-100'
+                    }`}
                   />
                   {errors.otp && <p className="text-red-500 text-sm mt-1 text-center">{errors.otp}</p>}
                 </div>
 
                 {/* Mock OTP Notice */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
                   <p className="text-sm text-blue-800">
-                    <strong>Demo Mode:</strong> Use OTP <code className="bg-blue-100 px-2 py-0.5 rounded">123456</code> to verify
+                    <strong>Demo Mode:</strong> Use OTP <code className="bg-blue-100 px-2 py-1 rounded font-mono">123456</code> to verify
                   </p>
                 </div>
 
@@ -292,7 +300,7 @@ export default function KYC() {
                     type="button"
                     onClick={handleResendOTP}
                     disabled={loading}
-                    className="text-primary-600 hover:underline text-sm font-medium"
+                    className="text-purple-600 hover:text-purple-700 hover:underline text-sm font-medium"
                   >
                     Didn't receive OTP? Resend
                   </button>
@@ -302,7 +310,7 @@ export default function KYC() {
                 <button
                   type="submit"
                   disabled={loading || otp.length < 4}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-3"
+                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {loading ? (
                     <>
@@ -321,7 +329,7 @@ export default function KYC() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="btn-secondary w-full"
+                  className="w-full py-3 border-2 border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all"
                 >
                   Back to Edit Phone
                 </button>
@@ -332,7 +340,7 @@ export default function KYC() {
             <div className="mt-6 text-center">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className="text-gray-500 hover:text-purple-600 text-sm transition-colors"
               >
                 Skip for now →
               </button>

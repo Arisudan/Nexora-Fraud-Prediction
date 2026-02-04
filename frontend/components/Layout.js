@@ -17,9 +17,9 @@ export default function Layout({ children, title = 'Nexora Fraud Predictor' }) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
-        <main className="flex-grow">
+        <main className="flex-grow pt-16">
           {children}
         </main>
         <Footer />
@@ -30,19 +30,28 @@ export default function Layout({ children, title = 'Nexora Fraud Predictor' }) {
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#363636',
+            background: '#1f2937',
             color: '#fff',
+            borderRadius: '12px',
+            padding: '16px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
           },
           success: {
+            style: {
+              background: 'linear-gradient(135deg, #059669, #10b981)',
+            },
             iconTheme: {
-              primary: '#22c55e',
-              secondary: '#fff',
+              primary: '#fff',
+              secondary: '#059669',
             },
           },
           error: {
+            style: {
+              background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+            },
             iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
+              primary: '#fff',
+              secondary: '#dc2626',
             },
           },
         }}

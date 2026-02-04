@@ -63,14 +63,14 @@ export default function RiskChecker({ onBlock, onMarkSafe }) {
   return (
     <div className="space-y-6">
       {/* Search Card */}
-      <div className="card">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-            <FiShield className="w-6 h-6 text-primary-600" />
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <FiShield className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Check Fraud Risk</h2>
-            <p className="text-gray-500 text-sm">Verify if a phone, email, or UPI ID is safe</p>
+            <h2 className="text-2xl font-bold text-gray-900">Check Fraud Risk</h2>
+            <p className="text-gray-500">Verify if a phone, email, or UPI ID is safe</p>
           </div>
         </div>
 
@@ -85,9 +85,9 @@ export default function RiskChecker({ onBlock, onMarkSafe }) {
                   setEntityType(type.value);
                   setRiskData(null);
                 }}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                   entityType === type.value
-                    ? 'bg-primary-600 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -108,13 +108,13 @@ export default function RiskChecker({ onBlock, onMarkSafe }) {
                   setError('');
                 }}
                 placeholder={selectedType?.placeholder}
-                className="input-field pl-12 py-3.5 text-lg"
+                className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary px-8 flex items-center gap-2"
+              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center gap-2 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
             >
               {loading ? (
                 <FiLoader className="w-5 h-5 animate-spin" />
@@ -131,8 +131,8 @@ export default function RiskChecker({ onBlock, onMarkSafe }) {
         </form>
 
         {/* Quick Stats */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <p className="text-sm text-gray-500 text-center">
             🛡️ Powered by Crowd Intelligence • Real-time community reports • Updated every minute
           </p>
         </div>
