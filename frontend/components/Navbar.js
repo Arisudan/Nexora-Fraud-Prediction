@@ -28,7 +28,7 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { href: '/', label: 'Home', icon: FiHome },
+    { href: '/', label: 'Home', icon: FiHome, hideWhenAuth: true },
     { href: '/dashboard', label: 'Dashboard', icon: FiSearch, protected: true },
     { href: '/settings', label: 'Settings', icon: FiSettings, protected: true },
   ];
@@ -45,18 +45,32 @@ export default function Navbar() {
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:shadow-purple-500/50 transition-all duration-300 group-hover:scale-105">
-                <FiShield className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-xl hidden sm:block gradient-text">Nexora</span>
-            </Link>
+            {isAuthenticated ? (
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 group"
+                title="Click to logout and go home"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:shadow-purple-500/50 transition-all duration-300 group-hover:scale-105">
+                  <FiShield className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-xl hidden sm:block gradient-text">Nexora</span>
+              </button>
+            ) : (
+              <Link href="/" className="flex items-center gap-2 group">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:shadow-purple-500/50 transition-all duration-300 group-hover:scale-105">
+                  <FiShield className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-xl hidden sm:block gradient-text">Nexora</span>
+              </Link>
+            )}
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => {
               if (link.protected && !isAuthenticated) return null;
+              if (link.hideWhenAuth && isAuthenticated) return null;
               return (
                 <Link
                   key={link.href}
@@ -125,6 +139,7 @@ export default function Navbar() {
           <div className="px-4 py-3 space-y-2">
             {navLinks.map((link) => {
               if (link.protected && !isAuthenticated) return null;
+              if (link.hideWhenAuth && isAuthenticated) return null;
               return (
                 <Link
                   key={link.href}
