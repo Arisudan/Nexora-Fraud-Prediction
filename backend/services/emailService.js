@@ -288,6 +288,75 @@ const sendEmail = async (to, template) => {
   }
 };
 
+// Email Verification Template
+const getEmailVerificationTemplate = (userName, verificationUrl) => ({
+  subject: `✉️ Verify Your Email - Nexora Fraud Predictor`,
+  html: `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa; margin: 0; padding: 20px;">
+      <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🛡️ Nexora</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">Fraud Predictor & Protection</p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #1a1a2e; margin: 0 0 10px;">Verify Your Email</h2>
+          <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            Hi${userName ? ` ${userName}` : ''}! Thanks for registering with Nexora Fraud Predictor. 
+            Please verify your email address to unlock all features.
+          </p>
+          
+          <!-- Verify Button -->
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+              ✓ Verify Email Address
+            </a>
+          </div>
+          
+          <p style="color: #888; font-size: 14px; text-align: center;">
+            ⏱️ This link expires in <strong>24 hours</strong>
+          </p>
+          
+          <p style="color: #888; font-size: 13px; margin-top: 20px;">
+            If the button doesn't work, copy and paste this link into your browser:
+          </p>
+          <p style="color: #667eea; font-size: 12px; word-break: break-all;">
+            ${verificationUrl}
+          </p>
+          
+          <!-- Security Notice -->
+          <div style="background: #e8f4fd; border: 1px solid #b8daff; border-radius: 8px; padding: 15px; margin-top: 25px;">
+            <p style="color: #004085; margin: 0; font-size: 13px;">
+              🔒 <strong>Security:</strong> Once verified, you'll have full access to fraud reporting, risk checking, and real-time protection features.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee;">
+          <p style="color: #888; margin: 0; font-size: 12px;">
+            If you didn't create an account, please ignore this email.
+          </p>
+          <p style="color: #aaa; margin: 10px 0 0; font-size: 11px;">
+            © ${new Date().getFullYear()} Nexora Fraud Predictor. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+  text: `Hi${userName ? ` ${userName}` : ''}!\n\nPlease verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis link expires in 24 hours.\n\nIf you didn't create an account, please ignore this email.\n\n© ${new Date().getFullYear()} Nexora Fraud Predictor`
+});
+
 // Public API
 const emailService = {
   initialize: initializeTransporter,
@@ -304,6 +373,11 @@ const emailService = {
   
   sendWelcome: async (email, userName, enabledProtections = []) => {
     const template = getWelcomeEmailTemplate(userName, enabledProtections);
+    return sendEmail(email, template);
+  },
+  
+  sendEmailVerification: async (email, userName, verificationUrl) => {
+    const template = getEmailVerificationTemplate(userName, verificationUrl);
     return sendEmail(email, template);
   }
 };

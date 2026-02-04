@@ -3,6 +3,7 @@
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -23,7 +24,7 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters'],
+    minlength: [8, 'Password must be at least 8 characters'],
     select: false
   },
   phone: {
@@ -31,6 +32,34 @@ const UserSchema = new mongoose.Schema({
     trim: true,
     match: [/^[0-9]{10,15}$/, 'Please enter a valid phone number']
   },
+  
+  // ==========================================
+  // EMAIL VERIFICATION
+  // ==========================================
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    select: false
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false
+  },
+  
+  // ==========================================
+  // ACCOUNT LOCKOUT (Brute Force Protection)
+  // ==========================================
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: {
+    type: Date
+  },
+  
   isVerified: {
     type: Boolean,
     default: false
@@ -140,6 +169,7 @@ UserSchema.methods.getPublicProfile = function() {
     email: this.email,
     phone: this.phone,
     isVerified: this.isVerified,
+    isEmailVerified: this.isEmailVerified,
     kycCompleted: this.kycCompleted,
     role: this.role,
     protectionSettings: this.protectionSettings,
@@ -147,6 +177,57 @@ UserSchema.methods.getPublicProfile = function() {
     pendingAlertsCount: this.pendingAlerts?.filter(a => !a.acknowledged).length || 0,
     createdAt: this.createdAt
   };
+};
+
+// ==========================================
+// ACCOUNT LOCKOUT METHODS
+// ==========================================
+
+// Check if account is locked
+UserSchema.virtual('isLocked').get(function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+});
+
+// Increment login attempts
+UserSchema.methods.incLoginAttempts = async function() {
+  // Reset if lock has expired
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    return await this.updateOne({
+      $set: { loginAttempts: 1 },
+      $unset: { lockUntil: 1 }
+    });
+  }
+  
+  const updates = { $inc: { loginAttempts: 1 } };
+  
+  // Lock account after 5 failed attempts for 30 minutes
+  if (this.loginAttempts + 1 >= 5) {
+    updates.$set = { lockUntil: Date.now() + 30 * 60 * 1000 }; // 30 minutes
+  }
+  
+  return await this.updateOne(updates);
+};
+
+// Reset login attempts on successful login
+UserSchema.methods.resetLoginAttempts = async function() {
+  return await this.updateOne({
+    $set: { loginAttempts: 0 },
+    $unset: { lockUntil: 1 }
+  });
+};
+
+// Generate email verification token
+UserSchema.methods.generateEmailVerificationToken = function() {
+  const token = crypto.randomBytes(32).toString('hex');
+  
+  this.emailVerificationToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  
+  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  
+  return token;
 };
 
 UserSchema.methods.getEnabledProtections = function() {

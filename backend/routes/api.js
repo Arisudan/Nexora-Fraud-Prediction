@@ -5,10 +5,12 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
+const crypto = require('crypto');
 
 const User = require('../models/User');
 const FraudReport = require('../models/FraudReport');
 const ActivityLog = require('../models/ActivityLog');
+const BlacklistedToken = require('../models/BlacklistedToken');
 const { 
   authenticateToken, 
   optionalAuth,
@@ -20,6 +22,169 @@ const {
 const otpService = require('../services/otpService');
 const emailService = require('../services/emailService');
 const websocketService = require('../services/websocketService');
+
+// ==========================================
+// PASSWORD STRENGTH VALIDATOR
+// ==========================================
+const validatePasswordStrength = (password) => {
+  const errors = [];
+  
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
+  }
+  
+  return errors;
+};
+
+// ==========================================
+// CONTENT-BASED FRAUD DETECTION (NLP)
+// Analyze SMS/Email content for fraud patterns
+// ==========================================
+
+const FRAUD_KEYWORDS = {
+  urgency: [
+    'urgent', 'immediately', 'now', 'asap', 'hurry', 'quickly', 'fast',
+    'limited time', 'act now', 'don\'t delay', 'last chance', 'expires today',
+    'deadline', '24 hours', 'within hours'
+  ],
+  financial: [
+    'bank account', 'credit card', 'debit card', 'atm', 'pin', 'cvv', 'otp',
+    'transfer', 'transaction', 'payment', 'loan', 'emi', 'upi', 'neft', 'rtgs',
+    'blocked', 'suspended', 'verify account', 'update kyc', 'kyc expired',
+    'prize', 'lottery', 'jackpot', 'won', 'winner', 'reward', 'cash prize',
+    'refund', 'cashback', 'bonus'
+  ],
+  threats: [
+    'account blocked', 'account suspended', 'will be blocked', 'will be suspended',
+    'legal action', 'police', 'arrest', 'case filed', 'complaint', 'court',
+    'fine', 'penalty', 'closure', 'terminate', 'deactivate', 'seized'
+  ],
+  impersonation: [
+    'customer care', 'customer support', 'helpline', 'helpdesk',
+    'rbi', 'reserve bank', 'income tax', 'it department', 'government',
+    'sbi', 'hdfc', 'icici', 'axis', 'bank manager', 'bank officer',
+    'amazon', 'flipkart', 'paytm', 'phonepe', 'gpay', 'google pay'
+  ],
+  action_requests: [
+    'click here', 'click link', 'tap here', 'click below', 'visit',
+    'call this number', 'call us', 'dial', 'contact immediately',
+    'share otp', 'share pin', 'provide details', 'verify yourself',
+    'confirm identity', 'update details', 'fill form', 'download app',
+    'install', 'remote access', 'anydesk', 'teamviewer'
+  ],
+  suspicious_patterns: [
+    'dear customer', 'dear user', 'dear valued', 'respected sir',
+    'confidential', 'do not share', 'keep secret',
+    'free gift', 'free offer', 'get free', '100% free',
+    'guaranteed', 'no risk', 'risk free'
+  ]
+};
+
+const analyzeContentForFraud = (content) => {
+  if (!content || typeof content !== 'string') {
+    return { isSuspicious: false, score: 0, findings: [] };
+  }
+  
+  const lowerContent = content.toLowerCase();
+  const findings = [];
+  let score = 0;
+  
+  // Check each category
+  for (const [category, keywords] of Object.entries(FRAUD_KEYWORDS)) {
+    const matchedKeywords = keywords.filter(keyword => 
+      lowerContent.includes(keyword.toLowerCase())
+    );
+    
+    if (matchedKeywords.length > 0) {
+      const categoryScore = matchedKeywords.length * getCategoryWeight(category);
+      score += categoryScore;
+      findings.push({
+        category,
+        matchedKeywords,
+        score: categoryScore
+      });
+    }
+  }
+  
+  // Check for suspicious URL patterns
+  const urlPatterns = [
+    /bit\.ly/gi, /tinyurl/gi, /goo\.gl/gi, /ow\.ly/gi, /t\.co/gi,
+    /shorturl/gi, /tiny\.cc/gi, /is\.gd/gi, /v\.gd/gi,
+    /http[s]?:\/\/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/gi // IP-based URLs
+  ];
+  
+  for (const pattern of urlPatterns) {
+    if (pattern.test(content)) {
+      score += 3;
+      findings.push({
+        category: 'suspicious_url',
+        matchedKeywords: ['shortened/suspicious URL detected'],
+        score: 3
+      });
+      break;
+    }
+  }
+  
+  // Check for excessive caps (shouting)
+  const capsRatio = (content.match(/[A-Z]/g) || []).length / content.length;
+  if (capsRatio > 0.5 && content.length > 20) {
+    score += 2;
+    findings.push({
+      category: 'excessive_caps',
+      matchedKeywords: ['Excessive use of capital letters'],
+      score: 2
+    });
+  }
+  
+  // Determine risk level
+  let riskLevel, riskMessage;
+  if (score === 0) {
+    riskLevel = 'safe';
+    riskMessage = 'No suspicious patterns detected in content.';
+  } else if (score <= 5) {
+    riskLevel = 'low';
+    riskMessage = 'Some potentially suspicious patterns detected. Be cautious.';
+  } else if (score <= 10) {
+    riskLevel = 'suspicious';
+    riskMessage = 'Multiple fraud indicators found. Exercise caution!';
+  } else {
+    riskLevel = 'high_risk';
+    riskMessage = 'HIGH RISK - Multiple fraud patterns detected! Likely a scam.';
+  }
+  
+  return {
+    isSuspicious: score > 0,
+    score,
+    riskLevel,
+    riskMessage,
+    findings,
+    analyzedAt: new Date()
+  };
+};
+
+const getCategoryWeight = (category) => {
+  const weights = {
+    urgency: 1,
+    financial: 2,
+    threats: 3,
+    impersonation: 3,
+    action_requests: 2,
+    suspicious_patterns: 1
+  };
+  return weights[category] || 1;
+};
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -141,7 +306,7 @@ const calculateFraudRisk = async (targetEntity) => {
 // AUTHENTICATION ROUTES
 // ==========================================
 
-// POST /api/auth/register - User Registration
+// POST /api/auth/register - User Registration with Password Strength & Email Verification
 router.post('/auth/register', [
   body('name')
     .trim()
@@ -152,12 +317,22 @@ router.post('/auth/register', [
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters'),
   body('protectionSettings').optional().isObject()
 ], validate, async (req, res) => {
   try {
     const { name, email, password, phone, protectionSettings } = req.body;
+    
+    // Strong password validation
+    const passwordErrors = validatePasswordStrength(password);
+    if (passwordErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password does not meet security requirements',
+        errors: passwordErrors
+      });
+    }
     
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
@@ -196,8 +371,12 @@ router.post('/auth/register', [
       email,
       password,
       phone: phone?.replace(/[\s\-\(\)\+\.]/g, ''),
-      protectionSettings: userProtectionSettings
+      protectionSettings: userProtectionSettings,
+      isEmailVerified: false
     });
+    
+    // Generate email verification token
+    const verificationToken = user.generateEmailVerificationToken();
     
     await user.save();
     
@@ -214,6 +393,13 @@ router.post('/auth/register', [
       userAgent: req.headers['user-agent']
     });
 
+    // Send email verification
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+    
+    emailService.sendEmailVerification(user.email, user.name, verificationUrl)
+      .then(() => console.log(`📧 Verification email sent to ${user.email}`))
+      .catch(err => console.error(`Failed to send verification email: ${err.message}`));
+
     // ⚡ REAL-TIME: Send welcome email with protection status
     const enabledProtections = [];
     if (userProtectionSettings.callProtection.enabled) enabledProtections.push('Call Protection');
@@ -226,10 +412,11 @@ router.post('/auth/register', [
     
     res.status(201).json({
       success: true,
-      message: 'Registration successful!',
+      message: 'Registration successful! Please check your email to verify your account.',
       data: {
         user: user.getPublicProfile(),
-        token
+        token,
+        emailVerificationRequired: true
       }
     });
   } catch (error) {
@@ -241,7 +428,113 @@ router.post('/auth/register', [
   }
 });
 
-// POST /api/auth/login - User Login
+// POST /api/auth/verify-email - Verify email address
+router.post('/auth/verify-email', [
+  body('token')
+    .notEmpty()
+    .withMessage('Verification token is required')
+], validate, async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    // Hash the token to compare with stored hash
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+    
+    // Find user with this token and not expired
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpires: { $gt: Date.now() }
+    }).select('+emailVerificationToken +emailVerificationExpires');
+    
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token. Please request a new one.'
+      });
+    }
+    
+    // Mark email as verified
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+    
+    // Log activity
+    await ActivityLog.logActivity({
+      userId: user._id,
+      actionType: 'email_verified',
+      details: { email: user.email },
+      result: 'success',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now access all features.'
+    });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error verifying email. Please try again.'
+    });
+  }
+});
+
+// POST /api/auth/resend-verification - Resend verification email
+router.post('/auth/resend-verification', [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email')
+], validate, async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    const user = await User.findByEmail(email);
+    
+    if (!user) {
+      // Don't reveal if email exists
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email, a verification link will be sent.'
+      });
+    }
+    
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already verified.'
+      });
+    }
+    
+    // Generate new verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save();
+    
+    // Send verification email
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+    
+    await emailService.sendEmailVerification(user.email, user.name, verificationUrl);
+    
+    res.json({
+      success: true,
+      message: 'Verification email sent. Please check your inbox.'
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending verification email. Please try again.'
+    });
+  }
+});
+
+// POST /api/auth/login - User Login with Account Lockout Protection
 router.post('/auth/login', [
   body('email')
     .isEmail()
@@ -254,8 +547,9 @@ router.post('/auth/login', [
   try {
     const { email, password } = req.body;
     
-    // Find user and include password field
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    // Find user and include password and lockout fields
+    const user = await User.findOne({ email: email.toLowerCase() })
+      .select('+password +loginAttempts +lockUntil');
     
     if (!user) {
       return res.status(401).json({
@@ -264,15 +558,61 @@ router.post('/auth/login', [
       });
     }
     
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+      
+      // Log failed attempt
+      await ActivityLog.logActivity({
+        userId: user._id,
+        actionType: 'login',
+        details: { email: user.email, reason: 'account_locked' },
+        result: 'blocked',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      return res.status(423).json({
+        success: false,
+        message: `Account is locked due to too many failed attempts. Please try again in ${minutesLeft} minute(s).`,
+        lockedUntil: user.lockUntil
+      });
+    }
+    
     // Compare password
     const isMatch = await user.comparePassword(password);
     
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password.'
+      // Increment login attempts
+      await user.incLoginAttempts();
+      
+      const attemptsLeft = 5 - (user.loginAttempts + 1);
+      
+      // Log failed attempt
+      await ActivityLog.logActivity({
+        userId: user._id,
+        actionType: 'login',
+        details: { email: user.email, reason: 'invalid_password' },
+        result: 'failed',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
       });
+      
+      if (attemptsLeft > 0) {
+        return res.status(401).json({
+          success: false,
+          message: `Invalid email or password. ${attemptsLeft} attempt(s) remaining.`
+        });
+      } else {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password. Account has been locked for 30 minutes.'
+        });
+      }
     }
+    
+    // Reset login attempts on successful login
+    await user.resetLoginAttempts();
     
     // Generate JWT token
     const token = generateToken(user._id);
@@ -292,7 +632,8 @@ router.post('/auth/login', [
       message: 'Login successful!',
       data: {
         user: user.getPublicProfile(),
-        token
+        token,
+        emailVerificationRequired: !user.isEmailVerified
       }
     });
   } catch (error) {
@@ -300,6 +641,44 @@ router.post('/auth/login', [
     res.status(500).json({
       success: false,
       message: 'Error during login. Please try again.'
+    });
+  }
+});
+
+// POST /api/auth/logout - Secure logout with token blacklisting
+router.post('/auth/logout', authenticateToken, async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (token) {
+      // Decode token to get expiry
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.decode(token);
+      const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      
+      // Blacklist the token
+      await BlacklistedToken.blacklistToken(token, req.user._id, expiresAt, 'logout');
+    }
+    
+    // Log activity
+    await ActivityLog.logActivity({
+      userId: req.user._id,
+      actionType: 'logout',
+      details: { email: req.user.email },
+      result: 'success',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
+    res.json({
+      success: true,
+      message: 'Logged out successfully.'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error during logout.'
     });
   }
 });
@@ -922,6 +1301,94 @@ router.get('/check-risk/:entity', optionalAuth, async (req, res) => {
 });
 
 // ==========================================
+// CONTENT-BASED FRAUD ANALYSIS ROUTES
+// ==========================================
+
+// POST /api/analyze-content - Analyze SMS/Email content for fraud patterns
+router.post('/analyze-content', optionalAuth, [
+  body('content')
+    .trim()
+    .notEmpty()
+    .withMessage('Content is required for analysis'),
+  body('contentType')
+    .optional()
+    .isIn(['sms', 'email', 'message'])
+    .withMessage('Content type must be one of: sms, email, message')
+], validate, async (req, res) => {
+  try {
+    const { content, contentType, senderEntity } = req.body;
+    
+    // Analyze content for fraud patterns
+    const contentAnalysis = analyzeContentForFraud(content);
+    
+    // If sender entity provided, also check entity risk
+    let entityRisk = null;
+    if (senderEntity) {
+      entityRisk = await calculateFraudRisk(senderEntity);
+    }
+    
+    // Combine scores if both analyses available
+    let combinedRiskLevel = contentAnalysis.riskLevel;
+    let combinedScore = contentAnalysis.score;
+    
+    if (entityRisk) {
+      combinedScore += entityRisk.score;
+      if (entityRisk.riskLevel === 'high_risk' || contentAnalysis.riskLevel === 'high_risk') {
+        combinedRiskLevel = 'high_risk';
+      } else if (entityRisk.riskLevel === 'suspicious' || contentAnalysis.riskLevel === 'suspicious') {
+        combinedRiskLevel = 'suspicious';
+      }
+    }
+    
+    // Log the analysis
+    await ActivityLog.logActivity({
+      userId: req.userId || null,
+      actionType: 'analyze_content',
+      targetEntity: senderEntity || 'unknown',
+      entityType: contentType || 'message',
+      details: { 
+        contentLength: content.length,
+        contentScore: contentAnalysis.score,
+        entityScore: entityRisk?.score || 0,
+        combinedScore
+      },
+      result: 'success',
+      riskLevel: combinedRiskLevel,
+      riskScore: combinedScore,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
+    res.json({
+      success: true,
+      message: 'Content analysis completed.',
+      data: {
+        contentAnalysis,
+        entityRisk,
+        combinedRisk: {
+          score: combinedScore,
+          riskLevel: combinedRiskLevel,
+          message: combinedRiskLevel === 'high_risk' 
+            ? '🚨 HIGH RISK - This message contains multiple fraud indicators!'
+            : combinedRiskLevel === 'suspicious'
+            ? '⚠️ CAUTION - Suspicious patterns detected. Be careful!'
+            : combinedRiskLevel === 'low'
+            ? '⚡ Low risk - Some patterns detected, but proceed with caution.'
+            : '✅ Content appears safe.'
+        },
+        analyzedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Content analysis error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error analyzing content.'
+    });
+  }
+});
+
+// ==========================================
 // PROTECTION SETTINGS ROUTES
 // ==========================================
 
@@ -1523,6 +1990,380 @@ router.post('/debug/test-report', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ==========================================
+// ADMIN PANEL ROUTES
+// ==========================================
+
+const { requireAdmin } = require('../middleware/auth');
+
+// GET /api/admin/stats - Get comprehensive admin statistics
+router.get('/admin/stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    // User statistics
+    const totalUsers = await User.countDocuments();
+    const verifiedUsers = await User.countDocuments({ isEmailVerified: true });
+    const newUsersThisMonth = await User.countDocuments({ 
+      createdAt: { $gte: thirtyDaysAgo } 
+    });
+    const lockedAccounts = await User.countDocuments({
+      lockUntil: { $gt: new Date() }
+    });
+    
+    // Report statistics
+    const totalReports = await FraudReport.countDocuments();
+    const activeReports = await FraudReport.countDocuments({ isActive: true });
+    const reportsThisMonth = await FraudReport.countDocuments({
+      timestamp: { $gte: thirtyDaysAgo }
+    });
+    
+    // Reports by category
+    const reportsByCategory = await FraudReport.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    
+    // Reports by entity type
+    const reportsByEntityType = await FraudReport.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: '$entityType', count: { $sum: 1 } } }
+    ]);
+    
+    // Activity logs
+    const recentActivity = await ActivityLog.find()
+      .sort({ timestamp: -1 })
+      .limit(20)
+      .populate('userId', 'name email');
+    
+    // Risk check counts
+    const riskChecksToday = await ActivityLog.countDocuments({
+      actionType: 'check_risk',
+      timestamp: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+    });
+    
+    // Blacklisted tokens count
+    const blacklistedTokens = await BlacklistedToken.countDocuments();
+    
+    res.json({
+      success: true,
+      data: {
+        users: {
+          total: totalUsers,
+          verified: verifiedUsers,
+          unverified: totalUsers - verifiedUsers,
+          newThisMonth: newUsersThisMonth,
+          lockedAccounts
+        },
+        reports: {
+          total: totalReports,
+          active: activeReports,
+          inactive: totalReports - activeReports,
+          thisMonth: reportsThisMonth,
+          byCategory: reportsByCategory,
+          byEntityType: reportsByEntityType
+        },
+        activity: {
+          riskChecksToday,
+          recentActivity
+        },
+        security: {
+          blacklistedTokens
+        },
+        generatedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Admin stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching admin statistics.'
+    });
+  }
+});
+
+// GET /api/admin/users - List all users with pagination
+router.get('/admin/users', authenticateToken, requireAdmin, [
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('search').optional().trim(),
+  query('role').optional().isIn(['user', 'admin', 'moderator']),
+  query('verified').optional().isBoolean().toBoolean()
+], async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 20;
+    const skip = (page - 1) * limit;
+    
+    // Build query
+    const queryFilter = {};
+    
+    if (req.query.search) {
+      queryFilter.$or = [
+        { name: { $regex: req.query.search, $options: 'i' } },
+        { email: { $regex: req.query.search, $options: 'i' } }
+      ];
+    }
+    
+    if (req.query.role) {
+      queryFilter.role = req.query.role;
+    }
+    
+    if (req.query.verified !== undefined) {
+      queryFilter.isEmailVerified = req.query.verified;
+    }
+    
+    const total = await User.countDocuments(queryFilter);
+    const users = await User.find(queryFilter)
+      .select('-password -emailVerificationToken')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.json({
+      success: true,
+      data: {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+          hasMore: page * limit < total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Admin users list error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching users.'
+    });
+  }
+});
+
+// PATCH /api/admin/users/:userId - Update user (admin actions)
+router.patch('/admin/users/:userId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role, isEmailVerified, unlockAccount } = req.body;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+    
+    // Update role
+    if (role && ['user', 'admin', 'moderator'].includes(role)) {
+      user.role = role;
+    }
+    
+    // Update email verification status
+    if (isEmailVerified !== undefined) {
+      user.isEmailVerified = isEmailVerified;
+    }
+    
+    // Unlock account
+    if (unlockAccount) {
+      user.loginAttempts = 0;
+      user.lockUntil = undefined;
+    }
+    
+    await user.save();
+    
+    // Log admin action
+    await ActivityLog.logActivity({
+      userId: req.user._id,
+      actionType: 'admin_user_update',
+      targetEntity: user.email,
+      details: { targetUserId: userId, changes: req.body },
+      result: 'success',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
+    res.json({
+      success: true,
+      message: 'User updated successfully.',
+      data: user.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Admin user update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user.'
+    });
+  }
+});
+
+// GET /api/admin/reports - List all reports with pagination
+router.get('/admin/reports', authenticateToken, requireAdmin, [
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('category').optional(),
+  query('entityType').optional().isIn(['phone', 'email', 'upi']),
+  query('isActive').optional().isBoolean().toBoolean()
+], async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 20;
+    const skip = (page - 1) * limit;
+    
+    // Build query
+    const queryFilter = {};
+    
+    if (req.query.category) {
+      queryFilter.category = req.query.category;
+    }
+    
+    if (req.query.entityType) {
+      queryFilter.entityType = req.query.entityType;
+    }
+    
+    if (req.query.isActive !== undefined) {
+      queryFilter.isActive = req.query.isActive;
+    }
+    
+    const total = await FraudReport.countDocuments(queryFilter);
+    const reports = await FraudReport.find(queryFilter)
+      .populate('reporterId', 'name email')
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.json({
+      success: true,
+      data: {
+        reports,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+          hasMore: page * limit < total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Admin reports list error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching reports.'
+    });
+  }
+});
+
+// DELETE /api/admin/reports/:reportId - Delete/deactivate a report
+router.delete('/admin/reports/:reportId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { permanent } = req.query;
+    
+    const report = await FraudReport.findById(reportId);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found.'
+      });
+    }
+    
+    if (permanent === 'true') {
+      await FraudReport.findByIdAndDelete(reportId);
+    } else {
+      report.isActive = false;
+      await report.save();
+    }
+    
+    // Log admin action
+    await ActivityLog.logActivity({
+      userId: req.user._id,
+      actionType: 'admin_report_delete',
+      targetEntity: report.targetEntity,
+      details: { reportId, permanent: permanent === 'true' },
+      result: 'success',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
+    res.json({
+      success: true,
+      message: permanent === 'true' ? 'Report permanently deleted.' : 'Report deactivated.'
+    });
+  } catch (error) {
+    console.error('Admin report delete error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting report.'
+    });
+  }
+});
+
+// ==========================================
+// PAGINATED PUBLIC ROUTES
+// ==========================================
+
+// GET /api/reports/paginated - Get reports with pagination (public)
+router.get('/reports/paginated', optionalAuth, [
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 50 }).toInt(),
+  query('category').optional(),
+  query('entityType').optional().isIn(['phone', 'email', 'upi']),
+  query('search').optional().trim()
+], async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const limit = Math.min(req.query.limit || 10, 50); // Max 50 per page
+    const skip = (page - 1) * limit;
+    
+    // Build query
+    const queryFilter = { isActive: true };
+    
+    if (req.query.category) {
+      queryFilter.category = req.query.category;
+    }
+    
+    if (req.query.entityType) {
+      queryFilter.entityType = req.query.entityType;
+    }
+    
+    if (req.query.search) {
+      queryFilter.targetEntity = { $regex: req.query.search, $options: 'i' };
+    }
+    
+    const total = await FraudReport.countDocuments(queryFilter);
+    const reports = await FraudReport.find(queryFilter)
+      .select('targetEntity entityType category timestamp')
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.json({
+      success: true,
+      data: {
+        reports,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+          hasMore: page * limit < total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Paginated reports error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching reports.'
+    });
   }
 });
 
